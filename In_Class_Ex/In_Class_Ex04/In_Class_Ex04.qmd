@@ -9,3 +9,29 @@ execute:
   warning: false
 editor: visual
 ---
+
+## 1. Installing and Loading the R packages
+
+```{r}
+pacman::p_load(maptools, sf, raster, spatstat, tmap)
+```
+
+Things to learn from this code chunk. All explanations have to be outside the code chunk if not will encounter issues
+
+## 2. Importing the Spatial Data
+
+Always check the file by right clicking and check the projection system the dataset file is using
+
+```{r}
+childcare_sf <- st_read("data/child-care-services-geojson.geojson") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+sg_sf <- st_read(dsn = "data", layer="CostalOutline")
+```
+
+```{r}
+mpsz_sf <- st_read(dsn = "data", 
+                layer = "MP14_SUBZONE_WEB_PL")
+```
