@@ -35,3 +35,32 @@ sg_sf <- st_read(dsn = "data", layer="CostalOutline")
 mpsz_sf <- st_read(dsn = "data", 
                 layer = "MP14_SUBZONE_WEB_PL")
 ```
+
+### 4.5.1 Converting sf data frames to sp's Spatial\* class
+
+```{r}
+childcare <- as_Spatial(childcare_sf)
+mpsz <- as_Spatial(mpsz_sf)
+sg <- as_Spatial(sg_sf)
+```
+
+```{r}
+childcare
+
+```
+
+### 4.5.2 Converting the Spatial\* class into generic sp format
+
+```{r}
+childcare_sp <- as(childcare, "SpatialPoints")
+sg_sp <- as(sg, "SpatialPolygons")
+```
+
+### 4.5.3 Converting the generic sp format into spatstat's ppp format
+
+Convert to only x y coordinate in two columns form so that can use in analytics later on
+
+```{r}
+childcare_ppp <- as(childcare_sp, "ppp")
+childcare_ppp
+```
