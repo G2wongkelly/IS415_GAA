@@ -1,7 +1,9 @@
 ---
-title: "IS415_GAA_Kelly"
+title: "Wong Kelly"
 ---
 
-Welcome to ***IS415 Geospatial Analytics and Applications***
+Welcome to my ***IS415 Geospatial Analytics and Applications Webpage! :)***
 
-This is the course website of IS415 I study this term. You will find my course work publish on this website.
+![](images/miffy2.jpg){width="92"} Fun Fact: I LOVE MIFFY
+
+Hello! Let me officially introduce myself! My name is Miffy and this is the course website of IS415 I study this term. You will find my course work publish on this website.

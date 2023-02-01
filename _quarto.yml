@@ -2,13 +2,15 @@ project:
   type: website
 
 website:
-  title: "IS415_GAA"
+  title: "Kelly's IS415 GAA"
   navbar:
     left: 
       - text: "Hands-on Exercise"
         menu: 
           - text: "Hands-on Exercise 1"
             href: "Hands_on_Ex/Hands_on_Ex01.qmd"
+          - text: "Hands-on Exercise 2"
+            href: "Hands_on_Ex/Hands_on_Ex02/Hands_on_Ex02.qmd"
             
             
       - text: "In-Class Exercise"
@@ -30,7 +32,7 @@ website:
 
 format:
   html:
-    theme: minty
+    theme: journal
     css: styles.css
     toc: true
 
