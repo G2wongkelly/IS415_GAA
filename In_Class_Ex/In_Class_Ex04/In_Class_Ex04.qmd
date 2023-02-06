@@ -13,7 +13,7 @@ editor: visual
 ## 1. Installing and Loading the R packages
 
 ```{r}
-pacman::p_load(maptools, sf, raster, spatstat, tmap)
+{pacman::p_load(maptools, sf, raster, spatstat, tmap)}
 ```
 
 Things to learn from this code chunk. All explanations have to be outside the code chunk if not will encounter issues
@@ -23,8 +23,7 @@ Things to learn from this code chunk. All explanations have to be outside the co
 Always check the file by right clicking and check the projection system the dataset file is using
 
 ```{r}
-childcare_sf <- st_read("data/child-care-services-geojson.geojson") %>%
-  st_transform(crs = 3414)
+childcare_sf <- st_read("data/child-care-services-geojson.geojson") %>% st_transform(crs = 3414)
 ```
 
 ```{r}
@@ -34,6 +33,18 @@ sg_sf <- st_read(dsn = "data", layer="CostalOutline")
 ```{r}
 mpsz_sf <- st_read(dsn = "data", 
                 layer = "MP14_SUBZONE_WEB_PL")
+
+```
+
+```{r}
+tmap_mode('view') #default (not more than 5 in assignment)
+tm_shape(childcare_sf)+ # data layer
+  tm_dots(alpha = 0.5, # different opacity - solid back to grey etc
+          size = 0.01) +
+  tm_view(set.zoom.limits = c(11,14))
+# 11 is the zoom out value (always smaller than the second value)
+# 14 is the zoom in value 
+
 ```
 
 ### 4.5.1 Converting sf data frames to sp's Spatial\* class
@@ -63,4 +74,14 @@ Convert to only x y coordinate in two columns form so that can use in analytics 
 ```{r}
 childcare_ppp <- as(childcare_sp, "ppp")
 childcare_ppp
+```
+
+```{r}
+plot(childcare_ppp)
+
+```
+
+```{r}
+sg_owin <- as(sg_sp, "owin")
+plot(sg_owin)
 ```

@@ -8,7 +8,7 @@
 
 <meta name="author" content="Wong Kelly">
 
-<title>Kelly’s IS415 GAA - Take-Home Exercise 1</title>
+<title>Kelly’s IS415 GAA - Take-Home Exercise 1: Application of Spatial Point Patterns Analysis to discover geographical distribution of functional &amp; non-functional water points in Osub State, Nigeria</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,6 +21,69 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1.6em;
   vertical-align: middle;
 }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 
@@ -89,6 +152,10 @@ ul.task-list li input[type="checkbox"] {
     <a class="dropdown-item" href="../../Hands_on_Ex/Hands_on_Ex01.html">
  <span class="dropdown-text">Hands-on Exercise 1</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../../Hands_on_Ex/Hands_on_Ex02/Hands_on_Ex02.html">
+ <span class="dropdown-text">Hands-on Exercise 2</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -142,7 +209,13 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#setting-the-scene" id="toc-setting-the-scene" class="nav-link active" data-scroll-target="#setting-the-scene">1. Setting the Scene</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1. Overview</a></li>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">2. Getting started</a></li>
+  <li><a href="#handling-geospatial-data" id="toc-handling-geospatial-data" class="nav-link" data-scroll-target="#handling-geospatial-data">3. Handling Geospatial Data</a></li>
+  <li><a href="#importing-geospatial" id="toc-importing-geospatial" class="nav-link" data-scroll-target="#importing-geospatial"><strong>3.1 Importing Geospatial</strong></a></li>
+  <li><a href="#importing-aspatial" id="toc-importing-aspatial" class="nav-link" data-scroll-target="#importing-aspatial"><strong>3.2 Importing Aspatial</strong></a></li>
+  <li><a href="#geospatial-data-cleaning" id="toc-geospatial-data-cleaning" class="nav-link" data-scroll-target="#geospatial-data-cleaning"><strong>4. Geospatial Data Cleaning</strong></a></li>
+  <li><a href="#excluding-redundent-fields" id="toc-excluding-redundent-fields" class="nav-link" data-scroll-target="#excluding-redundent-fields"><strong>4.1 Excluding redundent fields</strong></a></li>
   </ul>
 </nav>
     </div>
@@ -151,7 +224,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Take-Home Exercise 1</h1>
+<h1 class="title">Take-Home Exercise 1: Application of Spatial Point Patterns Analysis to discover geographical distribution of functional &amp; non-functional water points in Osub State, Nigeria</h1>
 </div>
 
 
@@ -169,7 +242,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">February 1, 2023</p>
+      <p class="date-modified">February 6, 2023</p>
     </div>
   </div>
     
@@ -178,12 +251,157 @@ ul.task-list li input[type="checkbox"] {
 
 </header>
 
-<p><strong>Application of Spatial Point Patterns Analysis to discover the geographical distribution of functional and non-function water points in Osub State, Nigeria</strong></p>
-<section id="setting-the-scene" class="level3">
-<h3 class="anchored" data-anchor-id="setting-the-scene">1. Setting the Scene</h3>
+<section id="overview" class="level3">
+<h3 class="anchored" data-anchor-id="overview">1. Overview</h3>
 <p>Water is an important resource to mankind. Clean and accessible water is critical to human health. It provides a healthy environment, a sustainable economy, reduces poverty and ensures peace and security. Yet over 40% of the global population does not have access to sufficient clean water. By 2025, 1.8 billion people will be living in countries or regions with absolute water scarcity, according to UN-Water. The lack of water poses a major threat to several sectors, including food security. Agriculture uses about 70% of the world’s accessible freshwater.</p>
+<p><img src="images/miffy&amp;water.jpg" class="img-fluid"></p>
 <p>Developing countries are most affected by water shortages and poor water quality. Up to 80% of illnesses in the developing world are linked to inadequate water and sanitation. Despite technological advancement, providing clean water to the rural community is still a major development issues in many countries globally, especially countries in the Africa continent.</p>
 <p>To address the issue of providing clean and sustainable water supply to the rural community, a global <a href="https://www.waterpointdata.org/about/">Water Point Data Exchange (WPdx)</a> project has been initiated. The main aim of this initiative is to collect water point related data from rural areas at the water point or small water scheme level and share the data via WPdx Data Repository, a cloud-based data library. What is so special of this project is that data are collected based on <a href="https://www.waterpointdata.org/wp-content/uploads/2021/04/WPDx_Data_Standard.pdf">WPDx Data Standard</a>.</p>
+<section id="objectives" class="level4">
+<h4 class="anchored" data-anchor-id="objectives">1.0 Objectives</h4>
+<p>Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply appropriate spatial point patterns analysis methods to discover the geographical distribution of functional and non-function water points and their co-locations if any in Osun State, Nigeria.</p>
+</section>
+</section>
+<section id="getting-started" class="level3">
+<h3 class="anchored" data-anchor-id="getting-started">2. Getting started</h3>
+<p>For this take-home assignment 1,</p>
+<p>#check for more packages to install if needed</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, tidyverse, funModeling, readxl,maptools,raster,spatstat,tmap)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="handling-geospatial-data" class="level3">
+<h3 class="anchored" data-anchor-id="handling-geospatial-data">3. Handling Geospatial Data</h3>
+</section>
+<section id="importing-geospatial" class="level3">
+<h3 class="anchored" data-anchor-id="importing-geospatial"><strong>3.1 Importing Geospatial</strong></h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>geoNGA <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/"</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">layer =</span> <span class="st">"geoBoundaries-NGA-ADM2"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">26392</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `geoBoundaries-NGA-ADM2' from data source 
+  `C:\G2wongkelly\IS415_GAA\Take_Home_Ex\Take_Home_Ex01\data\geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 774 features and 5 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 2.668534 ymin: 4.273007 xmax: 14.67882 ymax: 13.89442
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+</div>
+</section>
+<section id="importing-aspatial" class="level3">
+<h3 class="anchored" data-anchor-id="importing-aspatial"><strong>3.2 Importing Aspatial</strong></h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>wp_nga <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/aspatial/WPdx.csv"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="st">`</span><span class="at">#clean_country_name</span><span class="st">`</span> <span class="sc">==</span> <span class="st">"Nigeria"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>wp_nga<span class="sc">$</span>Geometry <span class="ot">=</span> <span class="fu">st_as_sfc</span>(wp_nga<span class="sc">$</span><span class="st">`</span><span class="at">New Georeferenced Column</span><span class="st">`</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>wp_nga</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 97,478 × 75
+   row_id `#source`      #lat_…¹ #lon_…² #repo…³ #stat…⁴ #wate…⁵ #wate…⁶ #wate…⁷
+    &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  
+ 1 158721 Federal Minis…    5.07    6.62 02/19/… Yes     Boreho… Well    Mechan…
+ 2 158892 Federal Minis…    5.09    7.09 02/06/… Yes     Boreho… Well    Hand P…
+ 3 323117 Federal Minis…    5.91    8.77 08/31/… Yes     Boreho… Well    Hand P…
+ 4 300176 Federal Minis…    5.23    7.32 05/17/… Yes     Boreho… Well    Mechan…
+ 5 324346 Federal Minis…    6.88    3.36 08/17/… Yes     Boreho… Well    Mechan…
+ 6 297273 Federal Minis…    6.59    3.29 05/26/… Yes     Boreho… Well    Mechan…
+ 7 296853 Federal Minis…    6.60    3.26 06/02/… Yes     Boreho… Well    Mechan…
+ 8 323866 Federal Minis…    6.20    6.73 09/18/… Yes     Boreho… Well    Mechan…
+ 9 297044 Federal Minis…    6.61    3.30 05/26/… Yes     Boreho… Well    Mechan…
+10 324321 Federal Minis…    6.96    3.60 08/16/… Yes     Boreho… Well    Mechan…
+# … with 97,468 more rows, 66 more variables: `#water_tech_category` &lt;chr&gt;,
+#   `#facility_type` &lt;chr&gt;, `#clean_country_name` &lt;chr&gt;, `#clean_adm1` &lt;chr&gt;,
+#   `#clean_adm2` &lt;chr&gt;, `#clean_adm3` &lt;chr&gt;, `#clean_adm4` &lt;chr&gt;,
+#   `#install_year` &lt;dbl&gt;, `#installer` &lt;chr&gt;, `#rehab_year` &lt;lgl&gt;,
+#   `#rehabilitator` &lt;lgl&gt;, `#management_clean` &lt;chr&gt;, `#status_clean` &lt;chr&gt;,
+#   `#pay` &lt;chr&gt;, `#fecal_coliform_presence` &lt;chr&gt;,
+#   `#fecal_coliform_value` &lt;dbl&gt;, `#subjective_quality` &lt;chr&gt;, …</code></pre>
+</div>
+</div>
+<section id="converting-water-point-data-into-sf-point-features" class="level4">
+<h4 class="anchored" data-anchor-id="converting-water-point-data-into-sf-point-features"><strong>3.2.1 Converting water point data into sf point features</strong></h4>
+<p>Converting an aspatial data into an sf data.frame involves two steps.</p>
+<p>First, we need to convert the <a href="https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry">wkt</a> field into sfc field by using <code>st_as_sfc()</code> data type.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>wp_nga<span class="sc">$</span>Geometry <span class="ot">=</span> <span class="fu">st_as_sfc</span>(wp_nga<span class="sc">$</span><span class="st">`</span><span class="at">New Georeferenced Column</span><span class="st">`</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>wp_nga</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 97,478 × 75
+   row_id `#source`      #lat_…¹ #lon_…² #repo…³ #stat…⁴ #wate…⁵ #wate…⁶ #wate…⁷
+    &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  
+ 1 158721 Federal Minis…    5.07    6.62 02/19/… Yes     Boreho… Well    Mechan…
+ 2 158892 Federal Minis…    5.09    7.09 02/06/… Yes     Boreho… Well    Hand P…
+ 3 323117 Federal Minis…    5.91    8.77 08/31/… Yes     Boreho… Well    Hand P…
+ 4 300176 Federal Minis…    5.23    7.32 05/17/… Yes     Boreho… Well    Mechan…
+ 5 324346 Federal Minis…    6.88    3.36 08/17/… Yes     Boreho… Well    Mechan…
+ 6 297273 Federal Minis…    6.59    3.29 05/26/… Yes     Boreho… Well    Mechan…
+ 7 296853 Federal Minis…    6.60    3.26 06/02/… Yes     Boreho… Well    Mechan…
+ 8 323866 Federal Minis…    6.20    6.73 09/18/… Yes     Boreho… Well    Mechan…
+ 9 297044 Federal Minis…    6.61    3.30 05/26/… Yes     Boreho… Well    Mechan…
+10 324321 Federal Minis…    6.96    3.60 08/16/… Yes     Boreho… Well    Mechan…
+# … with 97,468 more rows, 66 more variables: `#water_tech_category` &lt;chr&gt;,
+#   `#facility_type` &lt;chr&gt;, `#clean_country_name` &lt;chr&gt;, `#clean_adm1` &lt;chr&gt;,
+#   `#clean_adm2` &lt;chr&gt;, `#clean_adm3` &lt;chr&gt;, `#clean_adm4` &lt;chr&gt;,
+#   `#install_year` &lt;dbl&gt;, `#installer` &lt;chr&gt;, `#rehab_year` &lt;lgl&gt;,
+#   `#rehabilitator` &lt;lgl&gt;, `#management_clean` &lt;chr&gt;, `#status_clean` &lt;chr&gt;,
+#   `#pay` &lt;chr&gt;, `#fecal_coliform_presence` &lt;chr&gt;,
+#   `#fecal_coliform_value` &lt;dbl&gt;, `#subjective_quality` &lt;chr&gt;, …</code></pre>
+</div>
+</div>
+<p>Next, we will convert the tibble data.frame into an sf object by using <code>st_sf()</code>. It is also important for us to include the referencing system of the data into the sf object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>wp_sf <span class="ot">&lt;-</span> <span class="fu">st_sf</span>(wp_nga, <span class="at">crs=</span><span class="dv">4326</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>wp_sf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 97478 features and 74 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 2.707441 ymin: 4.301812 xmax: 14.21828 ymax: 13.86568
+Geodetic CRS:  WGS 84
+# A tibble: 97,478 × 75
+   row_id `#source`      #lat_…¹ #lon_…² #repo…³ #stat…⁴ #wate…⁵ #wate…⁶ #wate…⁷
+ *  &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;  
+ 1 158721 Federal Minis…    5.07    6.62 02/19/… Yes     Boreho… Well    Mechan…
+ 2 158892 Federal Minis…    5.09    7.09 02/06/… Yes     Boreho… Well    Hand P…
+ 3 323117 Federal Minis…    5.91    8.77 08/31/… Yes     Boreho… Well    Hand P…
+ 4 300176 Federal Minis…    5.23    7.32 05/17/… Yes     Boreho… Well    Mechan…
+ 5 324346 Federal Minis…    6.88    3.36 08/17/… Yes     Boreho… Well    Mechan…
+ 6 297273 Federal Minis…    6.59    3.29 05/26/… Yes     Boreho… Well    Mechan…
+ 7 296853 Federal Minis…    6.60    3.26 06/02/… Yes     Boreho… Well    Mechan…
+ 8 323866 Federal Minis…    6.20    6.73 09/18/… Yes     Boreho… Well    Mechan…
+ 9 297044 Federal Minis…    6.61    3.30 05/26/… Yes     Boreho… Well    Mechan…
+10 324321 Federal Minis…    6.96    3.60 08/16/… Yes     Boreho… Well    Mechan…
+# … with 97,468 more rows, 66 more variables: `#water_tech_category` &lt;chr&gt;,
+#   `#facility_type` &lt;chr&gt;, `#clean_country_name` &lt;chr&gt;, `#clean_adm1` &lt;chr&gt;,
+#   `#clean_adm2` &lt;chr&gt;, `#clean_adm3` &lt;chr&gt;, `#clean_adm4` &lt;chr&gt;,
+#   `#install_year` &lt;dbl&gt;, `#installer` &lt;chr&gt;, `#rehab_year` &lt;lgl&gt;,
+#   `#rehabilitator` &lt;lgl&gt;, `#management_clean` &lt;chr&gt;, `#status_clean` &lt;chr&gt;,
+#   `#pay` &lt;chr&gt;, `#fecal_coliform_presence` &lt;chr&gt;,
+#   `#fecal_coliform_value` &lt;dbl&gt;, `#subjective_quality` &lt;chr&gt;, …</code></pre>
+</div>
+</div>
+</section>
+<section id="transforming-into-nigeria-projected-coordinated-system" class="level4">
+<h4 class="anchored" data-anchor-id="transforming-into-nigeria-projected-coordinated-system"><strong>3.2.2 Transforming into Nigeria projected coordinated system</strong></h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>wp_sf <span class="ot">&lt;-</span> wp_sf <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">26392</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="geospatial-data-cleaning" class="level2">
+<h2 class="anchored" data-anchor-id="geospatial-data-cleaning"><strong>4. Geospatial Data Cleaning</strong></h2>
+</section>
+<section id="excluding-redundent-fields" class="level2">
+<h2 class="anchored" data-anchor-id="excluding-redundent-fields"><strong>4.1 Excluding redundent fields</strong></h2>
+<div class="cell">
+
+</div>
 
 
 </section>

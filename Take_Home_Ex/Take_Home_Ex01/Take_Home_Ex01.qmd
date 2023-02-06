@@ -1,5 +1,5 @@
 ---
-title: "Take-Home Exercise 1"
+title: "Take-Home Exercise 1: Application of Spatial Point Patterns Analysis to discover geographical distribution of functional & non-functional water points in Osub State, Nigeria"
 
 author: "Wong Kelly"
 date-modified: "`r Sys.Date()`"
@@ -10,12 +10,80 @@ execute:
 editor: visual
 ---
 
-**Application of Spatial Point Patterns Analysis to discover the geographical distribution of functional and non-function water points in Osub State, Nigeria**
-
-### 1. Setting the Scene
+### 1. Overview
 
 Water is an important resource to mankind. Clean and accessible water is critical to human health. It provides a healthy environment, a sustainable economy, reduces poverty and ensures peace and security. Yet over 40% of the global population does not have access to sufficient clean water. By 2025, 1.8 billion people will be living in countries or regions with absolute water scarcity, according to UN-Water. The lack of water poses a major threat to several sectors, including food security. Agriculture uses about 70% of the world's accessible freshwater.
+
+![](images/miffy&water.jpg)
 
 Developing countries are most affected by water shortages and poor water quality. Up to 80% of illnesses in the developing world are linked to inadequate water and sanitation. Despite technological advancement, providing clean water to the rural community is still a major development issues in many countries globally, especially countries in the Africa continent.
 
 To address the issue of providing clean and sustainable water supply to the rural community, a global [Water Point Data Exchange (WPdx)](https://www.waterpointdata.org/about/) project has been initiated. The main aim of this initiative is to collect water point related data from rural areas at the water point or small water scheme level and share the data via WPdx Data Repository, a cloud-based data library. What is so special of this project is that data are collected based on [WPDx Data Standard](https://www.waterpointdata.org/wp-content/uploads/2021/04/WPDx_Data_Standard.pdf).
+
+#### 1.0 Objectives
+
+Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply appropriate spatial point patterns analysis methods to discover the geographical distribution of functional and non-function water points and their co-locations if any in Osun State, Nigeria.
+
+### 2. Getting started
+
+For this take-home assignment 1,
+
+#check for more packages to install if needed
+
+```{r}
+pacman::p_load(sf, tidyverse, funModeling, readxl,maptools,raster,spatstat,tmap)
+```
+
+### 3. Handling Geospatial Data
+
+### **3.1 Importing Geospatial**
+
+```{r}
+geoNGA <- st_read("data/geospatial/",
+                  layer = "geoBoundaries-NGA-ADM2") %>%
+  st_transform(crs = 26392)
+```
+
+### **3.2 Importing Aspatial**
+
+```{r}
+wp_nga <- read_csv("data/aspatial/WPdx.csv") %>%
+  filter(`#clean_country_name` == "Nigeria")
+```
+
+```{r}
+wp_nga$Geometry = st_as_sfc(wp_nga$`New Georeferenced Column`)
+wp_nga
+```
+
+#### **3.2.1 Converting water point data into sf point features**
+
+Converting an aspatial data into an sf data.frame involves two steps.
+
+First, we need to convert the [wkt](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) field into sfc field by using `st_as_sfc()` data type.
+
+```{r}
+wp_nga$Geometry = st_as_sfc(wp_nga$`New Georeferenced Column`)
+wp_nga
+```
+
+Next, we will convert the tibble data.frame into an sf object by using `st_sf()`. It is also important for us to include the referencing system of the data into the sf object.
+
+```{r}
+wp_sf <- st_sf(wp_nga, crs=4326)
+wp_sf
+```
+
+#### **3.2.2 Transforming into Nigeria projected coordinated system**
+
+```{r}
+wp_sf <- wp_sf %>%
+  st_transform(crs = 26392)
+```
+
+## **4. Geospatial Data Cleaning**
+
+## **4.1 Excluding redundent fields**
+
+```{r}
+```
