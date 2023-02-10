@@ -24,66 +24,708 @@ To address the issue of providing clean and sustainable water supply to the rura
 
 Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply appropriate spatial point patterns analysis methods to discover the geographical distribution of functional and non-function water points and their co-locations if any in Osun State, Nigeria.
 
+#### 1.1 Data Acquisition
+
+##### *Apstial data*
+
+For the purpose of this assignment, data from [WPdx Global Data Repositories](https://www.waterpointdata.org/access-data/) will be used. There are two versions of the data. They are: WPdx-Basic and WPdx+. You are required to use **WPdx+** data set.
+
+##### *Geospatial data*
+
+This study will focus of Osun State, Nigeria. The state boundary GIS data of Nigeria can be downloaded either from The [Humanitarian Data Exchange](https://data.humdata.org/) portal or [geoBoundaries](https://www.geoboundaries.org/).
+
 ### 2. Getting started
 
-For this take-home assignment 1,
+#### 2.1 Installing and Loading the R packages
 
-#check for more packages to install if needed
+For this take-home assignment 1, we will install the below stated packages:
 
 ```{r}
-pacman::p_load(sf, tidyverse, funModeling, readxl,maptools,raster,spatstat,tmap)
+pacman::p_load(sf, funModeling,maptools,raster, spatstat, tmap ,  tidyverse)
 ```
 
-### 3. Handling Geospatial Data
+The code chunk is to check that all the required packages are installed if not, install them.
 
-### **3.1 Importing Geospatial**
+```{r}
+if (!require(sf)) {
+install.packages("sf")
+}
+if (!require(funModeling)) {
+install.packages("funModeling")
+}
+if (!require(maptools)) {
+install.packages("maptools")
+}
+if (!require(raster)) {
+install.packages("raster")
+}
+if (!require(spatstat)) {
+install.packages("spatstat")
+}
+if (!require(tmap)) {
+install.packages("tmap")
+}
+if (!require(tidyverse)) {
+install.packages("tidyverse")
+}
+```
+
+### 3. Data Wrangling: Geospatial Data & Aspatial Data
+
+### **3.1 Importing geoBoundaries Data into R**
+
+In this section of 3.1, st_read() of sf package will be used to import geospatial geoboundaries-NGA data set into R.
 
 ```{r}
 geoNGA <- st_read("data/geospatial/",
-                  layer = "geoBoundaries-NGA-ADM2") %>%
+                  layer = "geoBoundaries-NGA-ADM2")
+```
+
+From the output message, we learn that:
+
+-   Geometry type of geoBoundaries dataset is multipolygon
+
+-   774 features and 5 fields
+
+-   Assigned CRS is WGS 84 (geographic coordinate system)
+
+-   Dimension is XY
+
+### **3.2 Importing Geospatial NGA Data into R**
+
+Filter data to only Osun state as that is what we are interested in finding for this assignment!
+
+```{r}
+NGA <- st_read("data/geospatial/",
+               layer = "nga_admbnda_adm2_osgof_20190417") %>%
+  filter(ADM1_EN == "Osun") %>% 
   st_transform(crs = 26392)
 ```
 
-### **3.2 Importing Aspatial**
+From the output message,
+
+we learn that:
+
+-   Geometry type of NGA dataset is multipolygon
+
+-   774 features and 16 fields
+
+-   Assigned CRS is WGS 84 (geographic coordinate system)
+
+-   Dimension is XY
+
+In geospatial analytics, we need to transform the original data that is in geographic coordinate system (WGS) to projected coordinate system. This is because geographic coordinate system is not appropriate if the analysis need to use distance and/or area measurements.
+
+Therefore, we need to transform NGA dataset to projected coordinate system by using st_transform() in sf package. (will be further elaborate in section 3.3.1 and 3.3.2)
+
+By examining both sf dataframe closely, we notice that NGA provide both LGA and state information. **Hence, NGA data.frame will be used for the subsequent processing.**
+
+### **3.3 Importing Aspatial Data into R**
+
+In this section of 4, read_csv() will be used to import asptial data set and filter out only Nigeria data that we are interested in analysing for this project into R.
+
+Similarily, we filter data to only Osun state as that is what we are interested in finding for this assignment!
 
 ```{r}
 wp_nga <- read_csv("data/aspatial/WPdx.csv") %>%
+  filter(`#clean_adm1` == "Osun") %>%
   filter(`#clean_country_name` == "Nigeria")
 ```
 
-```{r}
-wp_nga$Geometry = st_as_sfc(wp_nga$`New Georeferenced Column`)
-wp_nga
-```
+#### 3.3.1 Converting Water Point Data into SF Point Features
 
-#### **3.2.1 Converting water point data into sf point features**
-
-Converting an aspatial data into an sf data.frame involves two steps.
-
-First, we need to convert the [wkt](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) field into sfc field by using `st_as_sfc()` data type.
+Step 1: Convert the wkt field into sfc field by using st_as_sfc() data type.
 
 ```{r}
 wp_nga$Geometry = st_as_sfc(wp_nga$`New Georeferenced Column`)
 wp_nga
 ```
 
-Next, we will convert the tibble data.frame into an sf object by using `st_sf()`. It is also important for us to include the referencing system of the data into the sf object.
+Step 2: Convert the tibble data.frame into an sf object by using st_sf(). It is also important for us to include the referencing system of the data into the sf object.
 
 ```{r}
 wp_sf <- st_sf(wp_nga, crs=4326)
 wp_sf
 ```
 
-#### **3.2.2 Transforming into Nigeria projected coordinated system**
+#### 3.3.2 Transforming into Nigeria Projected Coordinate System
 
 ```{r}
 wp_sf <- wp_sf %>%
   st_transform(crs = 26392)
+wp_sf
 ```
 
-## **4. Geospatial Data Cleaning**
+From the output message, we learn that:
 
-## **4.1 Excluding redundent fields**
+-   Geometry type of NGA dataset is now point
+
+-   97478 features and 74 fields
+
+-   Projected CRS: Minna/Nigeria Mid Belt
+
+-   Dimension: XY
+
+We have successfully transformed the data!! :D
+
+### **4. Data Pre-Processing**
+
+Before we can visualise our dataset and do the necessary analysis, we have to do data cleaning which is an important step in any data science task including geospatial data science. Things to check in the dataset:
+
+-   Invalid geometries
+
+-   Exclude redundancy
+
+-   Missing value
+
+-   Duplicate name
+
+#### 4.1 Check for Invalid Geometries
 
 ```{r}
+length(which(st_is_valid(NGA) == FALSE))
+length(which(st_is_valid(wp_sf) == FALSE))
 ```
+
+From the above generated output message, there is no invalid geometries! Great!
+
+#### 4.2 Exclude Redundancy
+
+```{r}
+NGA <- NGA %>%
+  select(c(3:4, 8:9))
+```
+
+#### 4.3 Check for Missing Value
+
+```{r}
+NGA[rowSums(is.na(NGA))!=0,]
+```
+
+The printout shows that there is zero missing value in the dataset!
+
+#### 4.4 Check for Duplicate Name
+
+```{r}
+NGA$ADM2_EN[duplicated(NGA$ADM2_EN)==TRUE]
+```
+
+Great!
+
+Now, we are ready to analyse the dataset!
+
+### **5. Data Wrangling for Water Point Data**
+
+Exploratory Data Analysis (EDA) is a popular approach to gain initial understanding of the data.
+
+Firstly, we take a look at all the column names in wp_sf dataset and identify the column we need to plot status_clean frequency bar chart.
+
+```{r}
+colnames(wp_sf)
+```
+
+Now, once we have the column name, we use the "table" function to get the frequency of unique values in a vector.
+
+This will return a frequency table with unique values in "wp_sf\$'#status_clean' and their corresponding frequency. The"sort" function will sort the table based on the frequency.
+
+```{r}
+sort(table(wp_sf$"#status_clean"), decreasing = TRUE)
+```
+
+To plot a bar chart based on the frequency table, use the "barplot" function in R.
+
+The below code will create a bar plot of the frequency table, with the x-axis labeled "status_clean" and the y-axis labeled "Frequency". The main title of the plot will be "Bar Plot of status_clean".
+
+```{r}
+#Set the colour scheme for the bar
+colors <- c("grey","pink","purple","blue","green","yellow")
+
+#Plot the frequency of status_clean in bar chart
+freq_table <- sort(table(wp_sf$"#status_clean"), decreasing = TRUE)
+barplot(freq_table, xlab = "status_clean", ylab = "Frequency", main = "Bar Plot of status_clean", col = colors)
+```
+
+Next, code chunk below will be used to perform the following data wrangling tasksP - rename() of dplyr package is used to rename the column from #status_clean to status_clean for easier handling in subsequent steps. mutate() and replace_na() are used to recode all the NA values in status_clean into unknown.
+
+```{r}
+wp_sf_nga <- wp_sf %>% 
+  rename(status_clean = '#status_clean') %>%
+  select(status_clean) %>%
+  mutate(status_clean = replace_na(
+    status_clean, "unknown"))
+
+```
+
+#### **5.1 Extracting Water Point Data**
+
+Now we are ready to extract the water point data according to their status.
+
+The code chunk below is used to extract **functional water point.**
+
+```{r}
+wp_functional <- wp_sf_nga %>%
+  filter(status_clean %in%
+           c("Functional",
+             "Functional but not in use",
+             "Functional but needs repair"))
+
+```
+
+The code chunk below is used to extract **nonfunctional water point.**
+
+```{r}
+wp_nonfunctional <- wp_sf_nga %>%
+  filter(status_clean %in%
+           c("Abandoned/Decommissioned",
+             "Abandoned",
+             "Non-Functional due to dry season",
+             "Non-Functional",
+             "Non functional due to dry season"))
+```
+
+The code chunk below is used to extract water point with **unknown status.**
+
+```{r}
+wp_unknown <- wp_sf_nga %>%
+  filter(status_clean == "unknown")
+```
+
+#### **5.2 Performing Point-in-Polygon Count**
+
+Next, we want to find out the number of total, functional, nonfunctional and unknown water points in each LGA. This is performed in the following code chunk.
+
+First, it identifies the functional water points in each LGA by using st_intersects() of sf package. Next, length() is used to calculate the number of functional water points that fall inside each LGA.
+
+```{r}
+NGA_wp <- NGA %>% 
+  mutate(`total_wp` = lengths(
+    st_intersects(NGA, wp_sf_nga))) %>%
+  mutate(`wp_functional` = lengths(
+    st_intersects(NGA, wp_functional))) %>%
+  mutate(`wp_nonfunctional` = lengths(
+    st_intersects(NGA, wp_nonfunctional))) %>%
+  mutate(`wp_unknown` = lengths(
+    st_intersects(NGA, wp_unknown)))
+```
+
+Notice that four new derived fields have been added into NGA_wp sf data.frame.
+
+We can check the summary statistics of the newly derived NGA_wp field by using summary() as shown in the code chunk below:
+
+```{r}
+summary(NGA_wp)
+```
+
+We can visualise the summary of NGA_wp sf dataframe in statistics forms such as mean, median, and max etc for both functional and nonfunctional.
+
+#### 5.3 Visualising attributes by using statistical graphs
+
+```{r}
+ggplot(data = NGA_wp,
+       aes(x = total_wp)) + 
+  geom_histogram(bins=20,
+                 color="black",
+                 fill="light blue") +
+  geom_vline(aes(xintercept=mean(
+    total_wp, na.rm=T)),
+             color="red", 
+             linetype="dashed", 
+             size=0.8) +
+  ggtitle("Distribution of total water points by LGA") +
+  xlab("No. of water points") +
+  ylab("No. of\nLGAs") +
+  theme(axis.title.y=element_text(angle = 0))
+```
+
+#### 5.4 Saving the analytical data in rds format
+
+```{r}
+write_rds(NGA_wp, "data/rds/NGA_wp.rds")
+```
+
+### 6. Geospatial Mapping
+
+#### 6.1 Basic Choropleth Mapping
+
+Visualising distribution of non-functional water point
+
+```{r}
+p1 <- tm_shape(NGA_wp) +
+  tm_fill("wp_functional",
+          n = 10,
+          style = "equal",
+          palette = "Blues") +
+  tm_borders(lwd = 0.1,
+             alpha = 1) +
+  tm_layout(main.title = "Distribution of functional water point by LGAs",
+            legend.outside = FALSE)
+```
+
+```{r}
+p2 <- tm_shape(NGA_wp) +
+  tm_fill("total_wp",
+          n = 10,
+          style = "equal",
+          palette = "Blues") +
+  tm_borders(lwd = 0.1,
+             alpha = 1) +
+  tm_layout(main.title = "Distribution of total  water point by LGAs",
+            legend.outside = FALSE)
+```
+
+```{r}
+tmap_arrange(p2, p1, nrow = 1)
+```
+
+#### 6.2 Choropleth Map for Rates: Deriving Proportion of Functional Water Points and Non-Functional Water Points
+
+We will tabulate the proportion of functional water points and the proportion of non-functional water points in each LGA. In the following code chunk, mutate() from dplyr package is used to derive two fields, namely pct_functional and pct_nonfunctional.
+
+```{r}
+NGA_wp <- NGA_wp %>%
+  mutate(pct_functional = wp_functional/total_wp) %>%
+  mutate(pct_nonfunctional = wp_nonfunctional/total_wp)
+```
+
+**6.3 Plotting map of rate**
+
+```{r}
+tm_shape(NGA_wp) +
+  tm_fill("pct_functional",
+          n = 10,
+          style = "equal",
+          palette = "Blues",
+          legend.hist = TRUE) +
+  tm_borders(lwd = 0.1,
+             alpha = 1) +
+  tm_layout(main.title = "Rate map of functional water point by LGAs",
+            legend.outside = TRUE)
+```
+
+#### 6.4 Extreme Value Maps: Percentile Map
+
+Extreme value maps are variations of common choropleth maps where the classification is designed to highlight extreme values at the lower and upper end of the scale, with the goal of identifying outliers. These maps were developed in the spirit of spatializing EDA, i.e., adding spatial features to commonly used approaches in non-spatial EDA (Anselin 1994).
+
+The percentile map is a special type of quantile map with six specific categories: 0-1%,1-10%, 10-50%,50-90%,90-99%, and 99-100%. The corresponding breakpoints can be derived by means of the base R quantile command, passing an explicit vector of cumulative probabilities as c(0,.01,.1,.5,.9,.99,1). Note that the begin and endpoint need to be included.
+
+***Step 1: Exclude records with NA by using the code chunk below***
+
+```{r}
+NGA_wp <- NGA_wp %>%
+  drop_na()
+```
+
+***Step 2: Creating customised classification and extracting values***
+
+```{r}
+percent <- c(0,.01,.1,.5,.9,.99,1)
+var <- NGA_wp["pct_functional"] %>%
+  st_set_geometry(NULL)
+quantile(var[,1], percent)
+```
+
+***Step 3: Creating the get.var function***
+
+We will write an R function as shown below to extract a variable (i.e. *wp_nonfunctional*) as a vector out of an sf data.frame.
+
+-   arguments:
+
+    -   vname: variable name (as character, in quotes)
+
+    -   df: name of sf data frame
+
+-   returns:
+
+    -   v: vector with values (without a column name)
+
+```{r}
+get.var <- function(vname,df) {
+  v <- df[vname] %>% 
+    st_set_geometry(NULL)
+  v <- unname(v[,1])
+  return(v)
+}
+```
+
+***Step 4: we will write a percentile mapping function by using the code chunk below.***
+
+```{r}
+percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
+  percent <- c(0,.01,.1,.5,.9,.99,1)
+  var <- get.var(vnam, df)
+  bperc <- quantile(var, percent)
+  tm_shape(df) +
+  tm_polygons() +
+  tm_shape(df) +
+     tm_fill(vnam,
+             title=legtitle,
+             breaks=bperc,
+             palette="Blues",
+          labels=c("< 1%", "1% - 10%", "10% - 50%", "50% - 90%", "90% - 99%", "> 99%"))  +
+  tm_borders() +
+  tm_layout(main.title = mtitle, 
+            title.position = c("right","bottom"))
+}
+```
+
+***Step 5: Test drive the percentile mapping function***
+
+(GOT TIME: can customise with legend, labels on the map etc)
+
+```{r}
+percentmap("total_wp", NGA_wp)
+```
+
+### **7. First-Order Spatial Point Patterns Analysis Methods**
+
+**Visualising the sf layers**
+
+It is always a good practice to plot the output sf layers on OSM layer to ensure that they have been imported properly and been projected on an appropriate projection system.
+
+```{r}
+tmap_mode("view")
+tm_shape(wp_sf_nga) +
+  tm_dots(alph = 0.5, 
+          size=0.01,
+          border.col = "grey",
+          border.lwd = 0.5) +
+  tm_view(set.zoom.limits = c(8,12))
+
+```
+
+#### 7.1 Converting SF Data Frames to SP's Spatial Class
+
+The code chunk below uses as_Spatial() of sf package to convert the geospatial data from simple data feature data frame to sp's Spatial\* class.
+
+```{r}
+nga_sp <- as_Spatial(wp_sf_nga)
+nga_sp
+```
+
+Notice from the output message that the geospatial data wp_sf_nga have been converted to sp's spatial\* class now.
+
+#### 7.2 Converting the Spatial\* Class into Generic SP Format
+
+Spstat requires the analytical data in ppp object form. There is no direct way to convert a Spatial\* classes into ppp object. We need to convert the Spatial classes\* into Spatial object first.
+
+The code chunk below converts the Spatial\* class of NGA into generic sp object.
+
+```{r}
+nga_sp <- as(nga_sp, "SpatialPoints")
+nga_sp
+```
+
+#### 7.3 Converting the Generic SP Format into Spatstat's ppp Format
+
+Now, we will use as.ppp() function of spatstat to convert the spatial data into spatstat's ppp object format.
+
+```{r}
+nga_ppp <- as(nga_sp, "ppp")
+nga_ppp
+```
+
+Let us then plot nga_ppp and examine the different.
+
+```{r}
+plot(nga_ppp)
+```
+
+We can also look at the summary statistics of the newly created ppp object by using the code chunk below.
+
+```{r}
+summary(nga_ppp)
+```
+
+There are no warning message about duplicates but let's do a double check before moving on :)
+
+```{r}
+any(duplicated(nga_ppp))
+```
+
+From the generated output, we can confidently say that there is no duplication!
+
+**7.4 Creating owin object**
+
+When analysing spatial point patterns, it is a good practice to confine the analysis with a geographical area like Nigeria boundary. In spatstat, an object called owin is specially designed to represent this polygonal region.
+
+The code chunk below is used to convert nga SpatialPolygon object into owin object of spatstat.
+
+```{r}
+install.packages("spatstat")
+library(spatstat)
+```
+
+```{r}
+
+library(sf)
+library(spatstat)
+
+# Load the spatial point data
+nga_spp <- st_as_sf(NGA, coords = c("x", "y"))
+
+# Convert the "SpatialPoints" object to a polygon format using st_cast()
+nga_poly <- st_cast(nga_spp, "POLYGON")
+
+# Extract the polygon geometry component of the "sf" object
+nga_geom <- st_geometry(nga_poly)
+
+# Convert the polygon geometry component to a list of polygon objects
+nga_list_poly <- as.list(nga_geom)
+
+# Create an "owin" object from the list of polyggon objects
+nga_owin <- as.owin(nga_spp)
+
+# Analyze the point pattern using spatstat functions
+plot(nga_owin)
+
+```
+
+```{r}
+nga_ppp = nga_ppp[nga_owin]
+plot(nga_ppp)
+```
+
+#### **7.5 Kernel Density Estimation**
+
+In this section, we will learn how to compute the kernel density estimation (KDE).
+
+The code chunk below computes a kernel density by using the following configurations of density() of spatstat:
+
+-   [*bw.diggle()*](https://rdrr.io/cran/spatstat/man/bw.diggle.html) automatic bandwidth selection method. Other recommended methods are [*bw.CvL()*](https://rdrr.io/cran/spatstat/man/bw.CvL.html), [*bw.scott()*](https://rdrr.io/cran/spatstat/man/bw.scott.html) or [*bw.ppl()*](https://rdrr.io/cran/spatstat/man/bw.ppl.html).\
+
+-   The smoothing kernel used is *gaussian*, which is the default. Other smoothing methods are: "epanechnikov", "quartic" or "disc".\
+
+-   The intensity estimate is corrected for edge effect bias by using method described by Jones (1993) and Diggle (2010, equation 18.9). The default is *FALSE*.
+
+```{r}
+kde_nga_bw <- density(nga_ppp,
+                      sigma=bw.diggle,
+                      edge=TRUE,
+                    kernel="gaussian") 
+```
+
+The plot() function of Base R is then used to display the kernel density derived.
+
+```{r}
+plot(kde_nga_bw)
+```
+
+```{r}
+bw <- bw.diggle(nga_ppp)
+bw
+```
+
+```{r}
+nga_ppp.km <- rescale(nga_ppp, 1000, "km")
+```
+
+```{r}
+kde_nga.bw <- density(nga_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_nga.bw)
+```
+
+```{r}
+kde_nga.bw <- density(nga_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+plot(kde_nga.bw)
+```
+
+```{r}
+gridded_kde_nga_bw <- as.SpatialGridDataFrame.im(kde_nga.bw)
+spplot(gridded_kde_nga_bw)
+```
+
+```{r}
+kde_nga.bw_rastor<- raster(gridded_kde_nga_bw)
+kde_nga.bw_rastor
+```
+
+```{r}
+projection(kde_nga.bw_rastor) <- CRS("+init=EPSG:3414")
+kde_nga.bw_rastor
+```
+
+```{r}
+tm_shape(kde_nga.bw_rastor) + 
+  tm_raster("v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)
+```
+
+### 8. Second Spatial Point Patterns Analysis Methods 
+
+#### 8.1 Analysing Spatial Point Process Using G-Function
+
+The code chunk below is used to compute G-function using Gest() of spatat package.
+
+```{r}
+G_CK = Gest(nga_ppp, correction = "border")
+plot(G_CK, xlim=c(0,1900))
+```
+
+#### **8.2 Performing Complete Spatial Randomness Test**
+
+To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis are test as follows:
+
+***Ho = The distribution of water points in Nigeria, Osun state are randomly distributed***
+
+***H1 = The distribution of water points in Nigeria, Osun sate are not randomly distributed***
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+Monte Carlo test with G-function
+
+```{r}
+G_CK.csr <- envelope(nga_ppp, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_CK.csr)
+```
+
+### 9. References
+
+#experiment heree
+
+```{r}
+tmap_mode("plot")
+qtm(NGA_wp, 
+    fill = "wp_functional")
+
+tmap_mode("plot")
+qtm(NGA_wp, 
+    fill = "wp_nonfunctional")
+
+tmap_mode("plot")
+qtm(NGA_wp, 
+    fill = "wp_unknown")
+
+```
+
+```{r}
+tm_shape(NGA_wp)+
+  tm_fill("wp_functional", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "Dependency ratio") +
+  tm_layout(main.title = "hello",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha =0.2) 
+```
+
+```{r}
+tm_shape(NGA_wp)+
+  tm_fill(c("wp_functional", "wp_nonfunctional","wp_unknown"),
+          style = "equal", 
+          palette = "Blues") +
+  tm_layout(legend.position = c("right", "bottom")) +
+  tm_borders(alpha = 0.5) +
+  tmap_style("white")
+```
+
+\

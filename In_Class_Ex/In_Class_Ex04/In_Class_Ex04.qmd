@@ -65,6 +65,7 @@ childcare
 ```{r}
 childcare_sp <- as(childcare, "SpatialPoints")
 sg_sp <- as(sg, "SpatialPolygons")
+sg_sp
 ```
 
 ### 4.5.3 Converting the generic sp format into spatstat's ppp format
