@@ -22,15 +22,15 @@ To address the issue of providing clean and sustainable water supply to the rura
 
 #### 1.0 Objectives
 
-Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply appropriate spatial point patterns analysis methods to discover the geographical distribution of functional and non-function water points and their co-locations if any in Osun State, Nigeria.
+Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply appropriate spatial point patterns analysis methods to discover the geographical distribution of functional and non-function water points and their co-locations if any in **Osun State, Nigeria.**
 
 #### 1.1 Data Acquisition
 
-##### *Apstial data*
+***Apstial data***
 
 For the purpose of this assignment, data from [WPdx Global Data Repositories](https://www.waterpointdata.org/access-data/) will be used. There are two versions of the data. They are: WPdx-Basic and WPdx+. You are required to use **WPdx+** data set.
 
-##### *Geospatial data*
+***Geospatial data***
 
 This study will focus of Osun State, Nigeria. The state boundary GIS data of Nigeria can be downloaded either from The [Humanitarian Data Exchange](https://data.humdata.org/) portal or [geoBoundaries](https://www.geoboundaries.org/).
 
@@ -38,7 +38,7 @@ This study will focus of Osun State, Nigeria. The state boundary GIS data of Nig
 
 #### 2.1 Installing and Loading the R packages
 
-For this take-home assignment 1, we will install the below stated packages:
+For take-home assignment 1, we will need to install the following packages:
 
 ```{r}
 pacman::p_load(sf, funModeling,maptools,raster, spatstat, tmap ,  tidyverse)
@@ -93,7 +93,9 @@ From the output message, we learn that:
 
 ### **3.2 Importing Geospatial NGA Data into R**
 
-Filter data to only Osun state as that is what we are interested in finding for this assignment!
+In this section of 3.2, st_read() of sf package will be used to import geospatial NGA dataset into R.
+
+We filter data to only Osun state as that is what we are interested in finding for this assignment!
 
 ```{r}
 NGA <- st_read("data/geospatial/",
@@ -118,13 +120,13 @@ In geospatial analytics, we need to transform the original data that is in geogr
 
 Therefore, we need to transform NGA dataset to projected coordinate system by using st_transform() in sf package. (will be further elaborate in section 3.3.1 and 3.3.2)
 
-By examining both sf dataframe closely, we notice that NGA provide both LGA and state information. **Hence, NGA data.frame will be used for the subsequent processing.**
+By examining both sf dataframe closely, we notice that NGA provide both LGA and state information.
+
+Hence, **NGA data.frame will be used for the subsequent processing.**
 
 ### **3.3 Importing Aspatial Data into R**
 
-In this section of 4, read_csv() will be used to import asptial data set and filter out only Nigeria data that we are interested in analysing for this project into R.
-
-Similarily, we filter data to only Osun state as that is what we are interested in finding for this assignment!
+In this section of 3.3, read_csv() will be used to import asptial data set into R and we filter out only Nigeria, Osun data rows as those are what we interested in analysing for this project.
 
 ```{r}
 wp_nga <- read_csv("data/aspatial/WPdx.csv") %>%
@@ -160,7 +162,7 @@ From the output message, we learn that:
 
 -   Geometry type of NGA dataset is now point
 
--   97478 features and 74 fields
+-   5745 features and 74 fields
 
 -   Projected CRS: Minna/Nigeria Mid Belt
 
@@ -187,7 +189,7 @@ length(which(st_is_valid(NGA) == FALSE))
 length(which(st_is_valid(wp_sf) == FALSE))
 ```
 
-From the above generated output message, there is no invalid geometries! Great!
+From the above generated output message, there are no invalid geometries! Great!
 
 #### 4.2 Exclude Redundancy
 
@@ -224,7 +226,7 @@ Firstly, we take a look at all the column names in wp_sf dataset and identify th
 colnames(wp_sf)
 ```
 
-Now, once we have the column name, we use the "table" function to get the frequency of unique values in a vector.
+Now, once we have the column name "#status_clean", we use the "table" function to get the frequency of unique values in a vector.
 
 This will return a frequency table with unique values in "wp_sf\$'#status_clean' and their corresponding frequency. The"sort" function will sort the table based on the frequency.
 
@@ -243,6 +245,18 @@ colors <- c("grey","pink","purple","blue","green","yellow")
 #Plot the frequency of status_clean in bar chart
 freq_table <- sort(table(wp_sf$"#status_clean"), decreasing = TRUE)
 barplot(freq_table, xlab = "status_clean", ylab = "Frequency", main = "Bar Plot of status_clean", col = colors)
+
+```
+
+The below code chunk will include percentage labels on the bar plot!
+
+```{r}
+# calculate the percentage of each status_clean value 
+freq_table_pct <- round(100* prop.table(freq_table),2)
+
+# plot the bar plot with the percentage labels 
+barplot(freq_table, xlab = "status_clean", ylab = "Frequency", main = "Bar Plot of status_clean (Percentage)", col = colors, las = 2)
+text(x = 1:length(freq_table), y = freq_table + 0.5, labels = paste(freq_table_pct, "%"), pos = 3, cex = 0.7)
 ```
 
 Next, code chunk below will be used to perform the following data wrangling tasksP - rename() of dplyr package is used to rename the column from #status_clean to status_clean for easier handling in subsequent steps. mutate() and replace_na() are used to recode all the NA values in status_clean into unknown.
@@ -310,13 +324,11 @@ NGA_wp <- NGA %>%
 
 Notice that four new derived fields have been added into NGA_wp sf data.frame.
 
-We can check the summary statistics of the newly derived NGA_wp field by using summary() as shown in the code chunk below:
+We can visualise the summary of NGA_wp sf dataframe in statistics forms such as mean, median, and max etc for both functional and nonfunctional by using summary() as shown in the code chunk below:
 
 ```{r}
 summary(NGA_wp)
 ```
-
-We can visualise the summary of NGA_wp sf dataframe in statistics forms such as mean, median, and max etc for both functional and nonfunctional.
 
 #### 5.3 Visualising attributes by using statistical graphs
 
@@ -337,6 +349,27 @@ ggplot(data = NGA_wp,
   theme(axis.title.y=element_text(angle = 0))
 ```
 
+##### 
+5.3.1 Observation from Statistical graph of NGA waterpoints
+
+-   The histogram is a right-skewed distribution where the long tail extends to the right whole most values cluster on the left, as shown above in section 5.3.
+
+-   There are a few possible outliers in the above histogram and we can use the 1.5 interquartile range (IQR) criterion to check whether they can be considered as outliers.
+
+    -   `Q1 = 134 and Q3 = 212, which give an IQR = Q3-Q1 = 78`
+
+    -   `Q1 - 1.5(IQR) = 134 - (1.5)(78) = 17`
+
+    -   `Q3 + 1.5(IQR) = 212 + (1.5)(78) = 329`
+
+-   The 1.5(IQR) criterion tells us that any observation with water points that is below 17 or above 329 is considered a suspected outlier.
+
+    ![](images/image-1203874235.png){width="520"}
+
+-   With that, we can conclude that there are three outliers in this histogram and those with an arrow above are the ones.
+
+    Ref: https://bolt.mph.ufl.edu/6050-6052/unit-1/one-quantitative-variable-introduction/understanding-outliers/
+
 #### 5.4 Saving the analytical data in rds format
 
 ```{r}
@@ -347,7 +380,13 @@ write_rds(NGA_wp, "data/rds/NGA_wp.rds")
 
 #### 6.1 Basic Choropleth Mapping
 
-Visualising distribution of non-functional water point
+In this section, will be plotting different choropleth maps to analyse the distribution of water point in Nigeria, Osun state.
+
+```{r}
+tmap_mode("plot")
+qtm(NGA_wp, 
+    fill = c("wp_functional","wp_nonfunctional", "wp_unknown"))
+```
 
 ```{r}
 p1 <- tm_shape(NGA_wp) +
@@ -377,6 +416,18 @@ p2 <- tm_shape(NGA_wp) +
 tmap_arrange(p2, p1, nrow = 1)
 ```
 
+##### 6.1.1 Observation of the Distribution of Water Points in Nigeria, Osun state.
+
+![](images/image-1155394611.png)
+
+From the map generated earlier in section 6.1 that shows the distribution of water points in Nigeria, Osun state according to their functionality. We observed a few things:
+
+-   At first glance, non-functional water map has a higher intensity based on its colours spread compared to the other two maps on its right and left. That could means that non-functional water points are more widely spread in Nigeria, Osun state.
+
+-   On the other hand, generally, functional water map has a least colours intensity spread compared to the other two maps. That could means that functional water points are less common/least spread in Nigeria, Osun state.
+
+**In conclusion, Nigeria, Osun state has a higher level of non-functional water than functional water.**
+
 #### 6.2 Choropleth Map for Rates: Deriving Proportion of Functional Water Points and Non-Functional Water Points
 
 We will tabulate the proportion of functional water points and the proportion of non-functional water points in each LGA. In the following code chunk, mutate() from dplyr package is used to derive two fields, namely pct_functional and pct_nonfunctional.
@@ -387,22 +438,23 @@ NGA_wp <- NGA_wp %>%
   mutate(pct_nonfunctional = wp_nonfunctional/total_wp)
 ```
 
-**6.3 Plotting map of rate**
-
 ```{r}
 tm_shape(NGA_wp) +
-  tm_fill("pct_functional",
+  tm_fill("wp_functional",
           n = 10,
           style = "equal",
           palette = "Blues",
+          title = "Dependency ratio",
           legend.hist = TRUE) +
   tm_borders(lwd = 0.1,
              alpha = 1) +
   tm_layout(main.title = "Rate map of functional water point by LGAs",
             legend.outside = TRUE)
+
+
 ```
 
-#### 6.4 Extreme Value Maps: Percentile Map
+#### 6.3 Extreme Value Maps: Percentile Map
 
 Extreme value maps are variations of common choropleth maps where the classification is designed to highlight extreme values at the lower and upper end of the scale, with the goal of identifying outliers. These maps were developed in the spirit of spatializing EDA, i.e., adding spatial features to commonly used approaches in non-spatial EDA (Anselin 1994).
 
@@ -470,10 +522,9 @@ percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
 
 ***Step 5: Test drive the percentile mapping function***
 
-(GOT TIME: can customise with legend, labels on the map etc)
-
 ```{r}
 percentmap("total_wp", NGA_wp)
+
 ```
 
 ### **7. First-Order Spatial Point Patterns Analysis Methods**
@@ -484,12 +535,18 @@ It is always a good practice to plot the output sf layers on OSM layer to ensure
 
 ```{r}
 tmap_mode("view")
-tm_shape(wp_sf_nga) +
+tm_shape(wp_functional) +
   tm_dots(alph = 0.5, 
           size=0.01,
-          border.col = "grey",
+          border.col = "blue",
+          border.lwd = 0.5) +
+  tm_shape(wp_nonfunctional) +
+  tm_dots(alph = 0.5, 
+          size=0.01,
+          border.col = "yellow",
           border.lwd = 0.5) +
   tm_view(set.zoom.limits = c(8,12))
+
 
 ```
 
@@ -500,6 +557,19 @@ The code chunk below uses as_Spatial() of sf package to convert the geospatial d
 ```{r}
 nga_sp <- as_Spatial(wp_sf_nga)
 nga_sp
+
+```
+
+#TYPE HERE#
+
+```{r}
+nga_functional_sp <- as_Spatial(wp_functional)
+nga_functional_sp
+```
+
+```{r}
+nga_nonfunctional_sp <- as_Spatial(wp_nonfunctional)
+nga_nonfunctional_sp
 ```
 
 Notice from the output message that the geospatial data wp_sf_nga have been converted to sp's spatial\* class now.
@@ -522,12 +592,28 @@ Now, we will use as.ppp() function of spatstat to convert the spatial data into 
 ```{r}
 nga_ppp <- as(nga_sp, "ppp")
 nga_ppp
+
+```
+
+#TYPE HERE
+
+```{r}
+nga_functional_ppp <- as(nga_functional_sp, "ppp")
+nga_functional_ppp
+
+```
+
+```{r}
+nga_nonfunctional_ppp <- as(nga_nonfunctional_sp, "ppp")
+nga_nonfunctional_ppp
 ```
 
 Let us then plot nga_ppp and examine the different.
 
 ```{r}
 plot(nga_ppp)
+plot(nga_functional_ppp)
+plot(nga_nonfunctional_ppp)
 ```
 
 We can also look at the summary statistics of the newly created ppp object by using the code chunk below.
@@ -550,10 +636,7 @@ When analysing spatial point patterns, it is a good practice to confine the anal
 
 The code chunk below is used to convert nga SpatialPolygon object into owin object of spatstat.
 
-```{r}
-install.packages("spatstat")
-library(spatstat)
-```
+**ONLY NIGERIA - OSUN STATE\*\***
 
 ```{r}
 
@@ -580,6 +663,38 @@ plot(nga_owin)
 
 ```
 
+The code chunk below is used to convert nga_geometry spatialpolygon object into owin object of spatstat.
+
+**ONLY NIGERIA\*\***
+
+```{r}
+library(sf)
+library(spatstat)
+
+# Load the spatial point data
+geometry_spp <- st_as_sf(geoNGA, coords = c("x", "y"))
+
+# Convert the "SpatialPoints" object to a polygon format using st_cast()
+nga_poly <- st_cast(geometry_spp, "POLYGON")
+
+# Extract the polygon geometry component of the "sf" object
+geom <- st_geometry(nga_poly)
+
+# Convert the polygon geometry component to a list of polygon objects
+nga_list_poly <- as.list(geom)
+
+#converting the spatial point into a projected coordinate system using the st_transform from the 'sf' package.
+nga_poly_proj <- st_transform(nga_poly, crs = "+proj=utm +zone=30 +ellps=WGS84")
+
+# Create an "owin" object from the list of polyggon objects
+nga_geometry_owin <- as.owin(nga_poly_proj)
+
+# Analyze the point pattern using spatstat functions
+plot(nga_geometry_owin)
+
+
+```
+
 ```{r}
 nga_ppp = nga_ppp[nga_owin]
 plot(nga_ppp)
@@ -587,7 +702,15 @@ plot(nga_ppp)
 
 #### **7.5 Kernel Density Estimation**
 
-In this section, we will learn how to compute the kernel density estimation (KDE).
+In this section, we will learn how to compute the kernel density estimation (KDE). Some definitions:
+
+-   Density: The amount of features or events per unit area
+
+-   Density estimation: The construction of the density function from the observed data
+
+-   Kernel: A window function fitted on each observation (weighted or unweighted) to determine the fraction of the observation used for density estimation at any location within the window
+
+    Ref: https://gistbok.ucgis.org/bok-topics/kernels-and-density-estimation
 
 The code chunk below computes a kernel density by using the following configurations of density() of spatstat:
 
@@ -616,12 +739,7 @@ bw
 ```
 
 ```{r}
-nga_ppp.km <- rescale(nga_ppp, 1000, "km")
-```
-
-```{r}
-kde_nga.bw <- density(nga_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
-plot(kde_nga.bw)
+nga_ppp.km <- rescale(nga_ppp, 100, "km")
 ```
 
 ```{r}
@@ -650,18 +768,22 @@ tm_shape(kde_nga.bw_rastor) +
   tm_layout(legend.position = c("right", "bottom"), frame = FALSE)
 ```
 
-### 8. Second Spatial Point Patterns Analysis Methods 
+##### **7.5.1 Observations from Kernel Density Map**
 
-#### 8.1 Analysing Spatial Point Process Using G-Function
+1.  ***Describe the spatial patterns revealed by the kernel density map***
+    -   From the density map generated, we could tell that the distribution of water points are mostly distributed evenly across Nigeria, Osun state (between 0.10 to 0.15) with only a few spots that have higher intense colours (between 0.25 to 0.30).
 
-The code chunk below is used to compute G-function using Gest() of spatat package.
+    -   There are still many areas in Nigeria, Osun state that have zero distribution of water points which means they do not have access to any water (0).
+2.  ***Highlight the advantages of kernel density map over point map***
+    -   Provides a continuous surface that represents the estimated density of points at each location. This allows to see the overall distribution of water points acorss Nigeria, Osun state more precisely with high or low densities. In contrast, a point map simply displays individual points, which can make it difficult to see patterns in the data.
 
-```{r}
-G_CK = Gest(nga_ppp, correction = "border")
-plot(G_CK, xlim=c(0,1900))
-```
+    -   Help identify hot spots or areas of high concentration, which can be useful for identifying clusters of points or areas of interest. This can be particularly useful in this assignment to identify areas with high intensity of water points in Nigeria, Osun state.
 
-#### **8.2 Performing Complete Spatial Randomness Test**
+    -   More visually appealing and easier to interpret than a point map, especially when dealing with large numbers of points.
+
+In conclusion, a kernel density map can provide a more accurate representation of the spatial distribution of points and can be more useful for identifying patterns and hot spots in the data. However, a point map can still be useful for exploring the individual points and for understanding the distribution at the local scale. The choice between a kernel density map and a point map often depends on the specific needs of the analysis and the type of data being analyzed.
+
+### 8. Second Spatial Point Patterns Analysis Methods
 
 To confirm the observed spatial patterns above, a hypothesis test will be conducted. The hypothesis are test as follows:
 
@@ -669,63 +791,92 @@ To confirm the observed spatial patterns above, a hypothesis test will be conduc
 
 ***H1 = The distribution of water points in Nigeria, Osun sate are not randomly distributed***
 
+***Confidence level = 95%***
+
+#### 8.1 Analysing Spatial Point Process Using G-Function
+
+The code chunk below is used to compute G-function using Gest() of spatat package.
+
+```{r}
+G_nga_functional = Gest(nga_functional_ppp, correction = "border")
+plot(G_nga_functional, xlim=c(0,1900))
+
+```
+
+```{r}
+G_nga_nonfunctional = Gest(nga_nonfunctional_ppp, correction = "border")
+plot(G_nga_nonfunctional, xlim=c(0,1900))
+```
+
+##### **8.2.1 Performing Complete Spatial Randomness Test**
+
 The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
 
 Monte Carlo test with G-function
 
 ```{r}
-G_CK.csr <- envelope(nga_ppp, Gest, nsim = 999)
+G_nga_functional.csr <- envelope(nga_functional_ppp, Gest, nsim = 999)
 ```
 
 ```{r}
-plot(G_CK.csr)
-```
-
-### 9. References
-
-#experiment heree
-
-```{r}
-tmap_mode("plot")
-qtm(NGA_wp, 
-    fill = "wp_functional")
-
-tmap_mode("plot")
-qtm(NGA_wp, 
-    fill = "wp_nonfunctional")
-
-tmap_mode("plot")
-qtm(NGA_wp, 
-    fill = "wp_unknown")
-
+G_nga_nonfunctional.csr <- envelope(nga_nonfunctional_ppp, Gest, nsim = 999)
 ```
 
 ```{r}
-tm_shape(NGA_wp)+
-  tm_fill("wp_functional", 
-          style = "quantile", 
-          palette = "Blues",
-          title = "Dependency ratio") +
-  tm_layout(main.title = "hello",
-            main.title.position = "center",
-            main.title.size = 1.2,
-            legend.height = 0.45, 
-            legend.width = 0.35,
-            frame = TRUE) +
-  tm_borders(alpha = 0.5) +
-  tm_compass(type="8star", size = 2) +
-  tm_scale_bar() +
-  tm_grid(alpha =0.2) 
+plot(G_nga_functional.csr,xlim=c(0,1900))
+plot(G_nga_nonfunctional.csr,xlim=c(0,1900))
+```
+
+#### 8.2 Analysing Spatial Point Process Using L-Function
+
+```{r}
+L_nga_functional = Lest(nga_functional_ppp, correction= "Ripley")
+plot(L_nga_functional, . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
 ```
 
 ```{r}
-tm_shape(NGA_wp)+
-  tm_fill(c("wp_functional", "wp_nonfunctional","wp_unknown"),
-          style = "equal", 
-          palette = "Blues") +
-  tm_layout(legend.position = c("right", "bottom")) +
-  tm_borders(alpha = 0.5) +
-  tmap_style("white")
+L_nga_nonfunctional = Lest(nga_nonfunctional_ppp, correction= "Ripley")
+plot(L_nga_nonfunctional, . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
 ```
+
+L_nga_nonfunctional.csr \<- envelope(nga_nonfunctional_ppp, Lest, nsim = 39, rank = 1, glocal=TRUE)
+
+```{r}
+L_nga_nonfunctional.csr <- envelope(nga_nonfunctional_ppp, Lest, nsim = 39, rank = 1, glocal=TRUE)
+```
+
+```{r}
+L_nga_functional.csr <- envelope(nga_functional_ppp, Lest, nsim = 39, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(L_nga_functional.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+```{r}
+plot(L_nga_nonfunctional.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
+```
+
+### 9. Spatial Correlation Analysis
+
+Local Colocation Quotients (LCLQ):
+
+The colocation quotient evaluates if there is a spatial association between two categorical vectors A and B.
+
+In this assignment, we are interested to find out if the spatial distribution of functional and non-functional water points are independent from each other.
+
+```{r}
+
+Functional <- wp_functional
+A <- Functional
+
+Nonfunctional <- wp_nonfunctional
+B <- Nonfunctional
+
+```
+
+### 10. References
 
 \
