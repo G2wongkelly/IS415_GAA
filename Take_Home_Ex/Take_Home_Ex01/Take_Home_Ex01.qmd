@@ -41,7 +41,7 @@ This study will focus of Osun State, Nigeria. The state boundary GIS data of Nig
 For take-home assignment 1, we will need to install the following packages:
 
 ```{r}
-pacman::p_load(sf, funModeling,maptools,raster, spatstat, tmap ,  tidyverse)
+pacman::p_load(sf, funModeling,maptools,raster, spatstat, tmap ,  tidyverse, sfdep)
 ```
 
 The code chunk is to check that all the required packages are installed if not, install them.
@@ -104,9 +104,7 @@ NGA <- st_read("data/geospatial/",
   st_transform(crs = 26392)
 ```
 
-From the output message,
-
-we learn that:
+From the output message, we learn that:
 
 -   Geometry type of NGA dataset is multipolygon
 
@@ -350,6 +348,7 @@ ggplot(data = NGA_wp,
 ```
 
 ##### 
+
 5.3.1 Observation from Statistical graph of NGA waterpoints
 
 -   The histogram is a right-skewed distribution where the long tail extends to the right whole most values cluster on the left, as shown above in section 5.3.
@@ -367,8 +366,6 @@ ggplot(data = NGA_wp,
     ![](images/image-1203874235.png){width="520"}
 
 -   With that, we can conclude that there are three outliers in this histogram and those with an arrow above are the ones.
-
-    Ref: https://bolt.mph.ufl.edu/6050-6052/unit-1/one-quantitative-variable-introduction/understanding-outliers/
 
 #### 5.4 Saving the analytical data in rds format
 
@@ -555,14 +552,14 @@ tm_shape(wp_functional) +
 The code chunk below uses as_Spatial() of sf package to convert the geospatial data from simple data feature data frame to sp's Spatial\* class.
 
 ```{r}
+
 nga_sp <- as_Spatial(wp_sf_nga)
 nga_sp
 
 ```
 
-#TYPE HERE#
-
 ```{r}
+
 nga_functional_sp <- as_Spatial(wp_functional)
 nga_functional_sp
 ```
@@ -572,7 +569,7 @@ nga_nonfunctional_sp <- as_Spatial(wp_nonfunctional)
 nga_nonfunctional_sp
 ```
 
-Notice from the output message that the geospatial data wp_sf_nga have been converted to sp's spatial\* class now.
+Notice from the output message that the geospatial data wp_sf_nga, wp_functional, and wp_nonfunctional have all been converted to sp's spatial\* class now.
 
 #### 7.2 Converting the Spatial\* Class into Generic SP Format
 
@@ -585,6 +582,16 @@ nga_sp <- as(nga_sp, "SpatialPoints")
 nga_sp
 ```
 
+```{r}
+nga_functional_sp <- as(nga_functional_sp, "SpatialPoints")
+nga_functional_sp
+```
+
+```{r}
+nga_nonfunctional_sp <- as(nga_nonfunctional_sp, "SpatialPoints")
+nga_nonfunctional_sp
+```
+
 #### 7.3 Converting the Generic SP Format into Spatstat's ppp Format
 
 Now, we will use as.ppp() function of spatstat to convert the spatial data into spatstat's ppp object format.
@@ -592,10 +599,7 @@ Now, we will use as.ppp() function of spatstat to convert the spatial data into 
 ```{r}
 nga_ppp <- as(nga_sp, "ppp")
 nga_ppp
-
 ```
-
-#TYPE HERE
 
 ```{r}
 nga_functional_ppp <- as(nga_functional_sp, "ppp")
@@ -710,13 +714,11 @@ In this section, we will learn how to compute the kernel density estimation (KDE
 
 -   Kernel: A window function fitted on each observation (weighted or unweighted) to determine the fraction of the observation used for density estimation at any location within the window
 
-    Ref: https://gistbok.ucgis.org/bok-topics/kernels-and-density-estimation
-
 The code chunk below computes a kernel density by using the following configurations of density() of spatstat:
 
--   [*bw.diggle()*](https://rdrr.io/cran/spatstat/man/bw.diggle.html) automatic bandwidth selection method. Other recommended methods are [*bw.CvL()*](https://rdrr.io/cran/spatstat/man/bw.CvL.html), [*bw.scott()*](https://rdrr.io/cran/spatstat/man/bw.scott.html) or [*bw.ppl()*](https://rdrr.io/cran/spatstat/man/bw.ppl.html).\
+-   [*bw.diggle()*](https://rdrr.io/cran/spatstat/man/bw.diggle.html) automatic bandwidth selection method. Other recommended methods are [*bw.CvL()*](https://rdrr.io/cran/spatstat/man/bw.CvL.html), [*bw.scott()*](https://rdrr.io/cran/spatstat/man/bw.scott.html) or [*bw.ppl()*](https://rdrr.io/cran/spatstat/man/bw.ppl.html).
 
--   The smoothing kernel used is *gaussian*, which is the default. Other smoothing methods are: "epanechnikov", "quartic" or "disc".\
+-   The smoothing kernel used is *gaussian*, which is the default. Other smoothing methods are: "epanechnikov", "quartic" or "disc".
 
 -   The intensity estimate is corrected for edge effect bias by using method described by Jones (1993) and Diggle (2010, equation 18.9). The default is *FALSE*.
 
@@ -724,13 +726,25 @@ The code chunk below computes a kernel density by using the following configurat
 kde_nga_bw <- density(nga_ppp,
                       sigma=bw.diggle,
                       edge=TRUE,
-                    kernel="gaussian") 
+                    kernel="gaussian")
+
+kde_nga_functional_bw <- density(nga_functional_ppp,
+                      sigma=bw.diggle,
+                      edge=TRUE,
+                    kernel="gaussian")
+
+kde_nga_nonfunctional_bw <- density(nga_nonfunctional_ppp,
+                      sigma=bw.diggle,
+                      edge=TRUE,
+                    kernel="gaussian")
 ```
 
 The plot() function of Base R is then used to display the kernel density derived.
 
 ```{r}
 plot(kde_nga_bw)
+plot(kde_nga_functional_bw)
+plot(kde_nga_nonfunctional_bw)
 ```
 
 ```{r}
@@ -739,12 +753,27 @@ bw
 ```
 
 ```{r}
+bw_functional <-bw.diggle(nga_functional_ppp)
+bw_functional
+```
+
+```{r}
+bw_nonfunctional <-bw.diggle(nga_nonfunctional_ppp)
+bw_nonfunctional
+```
+
+```{r}
 nga_ppp.km <- rescale(nga_ppp, 100, "km")
 ```
 
 ```{r}
 kde_nga.bw <- density(nga_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+kde_nga_functional.bw <- density(nga_functional_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+kde_nga_nonfunctional.bw <- density(nga_nonfunctional_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+
 plot(kde_nga.bw)
+plot(kde_nga_functional.bw)
+plot(kde_nga_nonfunctional.bw)
 ```
 
 ```{r}
@@ -808,7 +837,7 @@ G_nga_nonfunctional = Gest(nga_nonfunctional_ppp, correction = "border")
 plot(G_nga_nonfunctional, xlim=c(0,1900))
 ```
 
-##### **8.2.1 Performing Complete Spatial Randomness Test**
+##### **8.1.1 Performing Complete Spatial Randomness Test**
 
 The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
 
@@ -827,7 +856,27 @@ plot(G_nga_functional.csr,xlim=c(0,1900))
 plot(G_nga_nonfunctional.csr,xlim=c(0,1900))
 ```
 
+##### **8.1.2 Analysis of Spatial Point Pattern using G-Function**
+
+The G-function creates a graph of the "edge-corrected G-function". The upper curve is the empirical distribution of nearest neighbor distances for the water points, adjusted for edge effects caused by a finite domain.
+
+The lower curve shows the expected distribution for random uniform data of the same size on the same domain. The light-blue band is a 95% confidence envelope, which gives you a feeling for the variation due to random sampling.
+
+The G line is above the envelope and spatial randomness line for both functional and non-functional G graphs therefore, the graphs indicate that there is no structure in the water point data and there is a complete spatial randomness.
+
+**In summary, I will accept my null hypothesis and reject the alternative hypothesis to conclude that the distribution of water points in Nigeria, Osun state are randomly distributed.**
+
+G-function is useful for analyzing properties of spatial point patterns. This article compared tree data to a single instance of random uniform data. By using the SPP procedure, you can run a more complete analysis and obtain graphs and related statistics with minimal effort.
+
 #### 8.2 Analysing Spatial Point Process Using L-Function
+
+According to lesson 4 slides,
+
+-   L(r) \>0 indicates that the observed distribution is geographically concentrated
+
+-   L(r) \<0 implies dispersion
+
+-   L(r) = 0 indicates complete spatial randomness(CRS)
 
 ```{r}
 L_nga_functional = Lest(nga_functional_ppp, correction= "Ripley")
@@ -840,8 +889,6 @@ L_nga_nonfunctional = Lest(nga_nonfunctional_ppp, correction= "Ripley")
 plot(L_nga_nonfunctional, . -r ~ r, 
      ylab= "L(d)-r", xlab = "d(m)")
 ```
-
-L_nga_nonfunctional.csr \<- envelope(nga_nonfunctional_ppp, Lest, nsim = 39, rank = 1, glocal=TRUE)
 
 ```{r}
 L_nga_nonfunctional.csr <- envelope(nga_nonfunctional_ppp, Lest, nsim = 39, rank = 1, glocal=TRUE)
@@ -859,24 +906,95 @@ plot(L_nga_functional.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
 plot(L_nga_nonfunctional.csr, . - r ~ r, xlab="d", ylab="L(d)-r")
 ```
 
+8.2.1 Analysis of Spatial Point using L-Function
+
+For distance more than 1000m, the L(d) - r function (black line) lies above the L(d) - r function at CRS (red line).
+
+**Therefore, I will accept my null hypothesis and reject the alternative hypothesis to conclude that the distribution of water points in Nigeria, Osun state are randomly distributed.**
+
+**`For both functions (G&L), I will accept null hypothese and reject the alternative hypothesis.`**
+
 ### 9. Spatial Correlation Analysis
 
-Local Colocation Quotients (LCLQ):
+What is Local Colocation Quotients (LCLQ):
 
-The colocation quotient evaluates if there is a spatial association between two categorical vectors A and B.
+A point event category A is colocated with point events of category B if it is surrounded by several point event category B within a specified distance.
+
+E.g.
+
+![](images/image-88105583.png){width="356"}
 
 In this assignment, we are interested to find out if the spatial distribution of functional and non-functional water points are independent from each other.
 
+To confirm the observed spatial correlation pattern, a hypothesis test will be conducted. The hypothesis are test as follows:
+
+***Ho = The distribution of functional and non-functional water points are independent from each other***
+
+***H1 = The distribution of functional and non-functional water points are not independent from each other***
+
+***Confidence level = 95%***
+
 ```{r}
 
-Functional <- wp_functional
-A <- Functional
+wp_sf_clean <- wp_sf_nga %>%  filter(!status_clean=='unknown')
 
-Nonfunctional <- wp_nonfunctional
-B <- Nonfunctional
+nb = include_self(st_knn(st_geometry(wp_sf_clean), 6)) 
 
+wt = st_kernel_weights(nb, wp_sf_clean, "gaussian", adaptive = TRUE)
+f = wp_sf_clean %>%
+  filter(status_clean == "Functional")
+
+A = f$status_clean
+
+nf = wp_sf_clean %>%
+  filter(status_clean == "Non-Functional")
+B = nf$status_clean
+
+LCLQ = local_colocation(A, B, nb, wt, 49)
+LCLQ_wp = cbind(wp_sf_clean, LCLQ)
 ```
 
-### 10. References
+Code breakdown:
 
-\
+-   The code first filters the **`wp_sf_clean`** object to remove any entries with a "status_clean" of "unknown".
+
+-   Then, it calculates the 6 nearest neighbors for each feature in the **`wp_sf_clean`** object using the **`st_knn`** function from the **`sf`** library and creates a weight matrix for each feature with the **`st_kernel_weights`** function, using a Gaussian kernel.
+
+-   Next, the code creates two separate objects, **`f`** and **`nf`**, which contain only the "Functional" and "Non-Functional" features from the **`wp_sf_clean`** object, respectively.
+
+-   The **`local_colocation`** function is then applied to the two objects, using the nearest neighbor information and weight matrix calculated earlier, with a neighborhood size of 49. Finally, the output of the **`local_colocation`** function is combined with the **`wp_sf_clean`** object using **`cbind`**, creating a new object **`LCLQ_wp`**.
+
+```{r}
+tmap_mode("view")
+tm_shape(NGA_wp) +
+  tm_polygons() +
+  tm_shape(LCLQ_wp) +
+  tm_dots(col = c("Non.Functional"), 
+          size = 0.01,
+          border.col = "black",
+          border.lwd = 0.5) +
+  tm_view(set.bounds = c(4,7,5,8),
+          set.zoom.limits = c(8, 13))
+```
+
+#### 9.1 Analysis of Spatial Correlation 
+
+The tool will determine, for each feature of the Category of Interest, whether the features of the Neighboring Category are more or less present in its neighborhood compared to the overall spatial distribution of the categories. For example, for each feature of category A, a resulting local colocation quotient (LCLQ) **value of 1 means that you are as likely to have category B as a neighbor** as you might expect. A LCLQ value greater than 1 means you are more likely (than random) to have B as a neighbor, and a LCLQ value less than 1 means that the feature of category A is less likely to have a category B point as your neighbor (than a random distribution).
+
+According to the map generated, the proportion of B (non functional points) within the neighborhood of A (functional points) is lower than the global porportion of A, the colocation quotient is therefore low or there are only a few local colocation quotient (LCLQ) with the value of 1 which means there is low colocation between the points.
+
+**Therefore, I will reject the alternative hypothesis and accept the null hypothesis saying that the distribution of functional and non-functional water points are independent from each other.**
+
+### 10. References & Resources Used
+
+Here are the list of resources used in this analysis, as well as their links. Special thanks to Seniors work samples and Prof Kam for all the detailed explanations and clear documentary posted!! :))
+
+Section 5.3.1: https://bolt.mph.ufl.edu/6050-6052/unit-1/one-quantitative-variable-introduction/understanding-outliers/
+
+Section 7.5: https://gistbok.ucgis.org/bok-topics/kernels-and-density-estimation
+
+Section 8.1: https://blogs.sas.com/content/iml/2016/09/19/nearest-neighbor-distances.html
+
+Section 8.2.1: https://www.mattpeeples.net/modules/PointPattern.html
+
+Section 9.1: https://pro.arcgis.com/en/pro-app/latest/tool-reference/spatial-statistics/colocationanalysis.htm
