@@ -977,13 +977,13 @@ tm_shape(NGA_wp) +
           set.zoom.limits = c(8, 13))
 ```
 
-#### 9.1 Analysis of Spatial Correlation 
+#### 9.1 Analysis of Spatial Correlation
 
 The tool will determine, for each feature of the Category of Interest, whether the features of the Neighboring Category are more or less present in its neighborhood compared to the overall spatial distribution of the categories. For example, for each feature of category A, a resulting local colocation quotient (LCLQ) **value of 1 means that you are as likely to have category B as a neighbor** as you might expect. A LCLQ value greater than 1 means you are more likely (than random) to have B as a neighbor, and a LCLQ value less than 1 means that the feature of category A is less likely to have a category B point as your neighbor (than a random distribution).
 
-According to the map generated, the proportion of B (non functional points) within the neighborhood of A (functional points) is lower than the global porportion of A, the colocation quotient is therefore low or there are only a few local colocation quotient (LCLQ) with the value of 1 which means there is low colocation between the points.
+According to the map generated, the proportion of A (functional points) within the neighborhood of B (nonfunctional points) is higher than the global porportion of A, the colocation quotient is therefore high or based on the slides explanation, 99% of the point have a value of 1 which means that it is likely to have both functional and nonfunctional points collocate together.
 
-**Therefore, I will reject the alternative hypothesis and accept the null hypothesis saying that the distribution of functional and non-functional water points are independent from each other.**
+**Therefore, I will reject the null hypothesis and accept the alternative hypothesis saying that the distribution of functional and non-functional water points are not independent from each other.**
 
 ### 10. References & Resources Used
 
