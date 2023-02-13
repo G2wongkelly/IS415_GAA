@@ -1,5 +1,5 @@
 ---
-title: "In-class Exercise 6"
+title: "In-class Exercise 6: Spatial Weights: sfdep methods"
 author: "Wong Kelly"
 date: "13 Febrauary 2023"
 date-modified: "`r Sys.Date()`"
@@ -7,10 +7,104 @@ format: html
 editor: visual
 ---
 
-#work with sfdep for in class exercise
-
 ### Installing and Loading the R packages
 
 ```{r}
 pacman:: p_load(tidyverse,tmap,sf,sfdep)
+```
+
+### The Data
+
+For the purpose of this in-class exercise, the Hunan data sets will be used. There are two data sets in this use case, they are:
+
+-   Hunan, a geospatial data set in ESRI **shapefile format**, and
+
+-   Hunan_2012, an attribute data set in **csv format**
+
+### Importing geospatial data
+
+```{r}
+#st_read is a sf function
+Hunan <- st_read(dsn="data/geospatial",
+                     layer="Hunan")
+```
+
+```{r}
+#from the package read(r) in tidyverse
+Hunan_2012 <- read_csv("data/aspatial/Hunan_2012.csv") 
+```
+
+### Combining both data frame by using left join
+
+Note that one have geometric column but the other dataset doesnt have.
+
+Therefore, the left input file should be one with sf dataframe and right input file should be normal csv file.
+
+```{r}
+# there is built in intelligence to identify there is common field between the two data sets however, always check the dataset if the column name and data are similar to join
+#R is case sensitive
+Hunan_GDPPC <- left_join(Hunan,Hunan_2012)%>%
+  select(1:4, 7, 15)
+#after joining, we just retain column 1-4, 7 and 15 only
+```
+
+### Plotting a choropleth map
+
+```{r}
+tmap_mode("plot") 
+tm_shape(Hunan_GDPPC) + #define spatial data you want
+  tm_fill("GDPPC", 
+          style = "quantile",
+          palette = "Blues",
+          title = "GDPPC") +
+  tm_layout(main.title = "Distribution of GDP per capita by district",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45,
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha=0.2)
+```
+
+### Identify area neighbours
+
+Before spatial weight matrix can be derived, the neighbours need to be identified first.
+
+### Contiguity neighbours method \# redundant if you have the queen's method
+
+```{r}
+cn_queen <- Hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry), #create a new field call nb and store the result of st_contiguity 
+                            .before=1) #put nb newly created field as the first cloumn
+```
+
+Arguments:
+
+Geometry - an sf or sfc object
+
+queen - default true
+
+inspect cn_queen data set
+
+#Using the steps you just learned, derive a contiguity neighbour list using Rook's method\\
+
+```{r}
+cn_rook <- Hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry),
+         queen = FALSE,
+         .before = 1)
+```
+
+### Computing contiguity weights
+
+#### Contiguity weights: Queen's method
+
+```{r}
+wm_q <- Hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry),
+         wt = st_weights(nb),
+         .before = 1)
 ```
