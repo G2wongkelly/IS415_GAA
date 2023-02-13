@@ -1,0 +1,16 @@
+---
+title: "In-class Exercise 6"
+author: "Wong Kelly"
+date: "13 Febrauary 2023"
+date-modified: "`r Sys.Date()`"
+format: html
+editor: visual
+---
+
+#work with sfdep for in class exercise
+
+### Installing and Loading the R packages
+
+```{r}
+pacman:: p_load(tidyverse,tmap,sf,sfdep)
+```
