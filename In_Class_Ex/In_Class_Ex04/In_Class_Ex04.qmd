@@ -33,7 +33,6 @@ sg_sf <- st_read(dsn = "data", layer="CostalOutline")
 ```{r}
 mpsz_sf <- st_read(dsn = "data", 
                 layer = "MP14_SUBZONE_WEB_PL")
-
 ```
 
 ```{r}
@@ -44,7 +43,6 @@ tm_shape(childcare_sf)+ # data layer
   tm_view(set.zoom.limits = c(11,14))
 # 11 is the zoom out value (always smaller than the second value)
 # 14 is the zoom in value 
-
 ```
 
 ### 4.5.1 Converting sf data frames to sp's Spatial\* class
@@ -57,7 +55,6 @@ sg <- as_Spatial(sg_sf)
 
 ```{r}
 childcare
-
 ```
 
 ### 4.5.2 Converting the Spatial\* class into generic sp format
@@ -79,7 +76,6 @@ childcare_ppp
 
 ```{r}
 plot(childcare_ppp)
-
 ```
 
 ```{r}

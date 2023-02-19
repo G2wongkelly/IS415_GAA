@@ -239,11 +239,9 @@ The below code will create a bar plot of the frequency table, with the x-axis la
 ```{r}
 #Set the colour scheme for the bar
 colors <- c("grey","pink","purple","blue","green","yellow")
-
 #Plot the frequency of status_clean in bar chart
 freq_table <- sort(table(wp_sf$"#status_clean"), decreasing = TRUE)
 barplot(freq_table, xlab = "status_clean", ylab = "Frequency", main = "Bar Plot of status_clean", col = colors)
-
 ```
 
 The below code chunk will include percentage labels on the bar plot!
@@ -251,7 +249,6 @@ The below code chunk will include percentage labels on the bar plot!
 ```{r}
 # calculate the percentage of each status_clean value 
 freq_table_pct <- round(100* prop.table(freq_table),2)
-
 # plot the bar plot with the percentage labels 
 barplot(freq_table, xlab = "status_clean", ylab = "Frequency", main = "Bar Plot of status_clean (Percentage)", col = colors, las = 2)
 text(x = 1:length(freq_table), y = freq_table + 0.5, labels = paste(freq_table_pct, "%"), pos = 3, cex = 0.7)
@@ -265,7 +262,6 @@ wp_sf_nga <- wp_sf %>%
   select(status_clean) %>%
   mutate(status_clean = replace_na(
     status_clean, "unknown"))
-
 ```
 
 #### **5.1 Extracting Water Point Data**
@@ -280,7 +276,6 @@ wp_functional <- wp_sf_nga %>%
            c("Functional",
              "Functional but not in use",
              "Functional but needs repair"))
-
 ```
 
 The code chunk below is used to extract **nonfunctional water point.**
@@ -447,8 +442,6 @@ tm_shape(NGA_wp) +
              alpha = 1) +
   tm_layout(main.title = "Rate map of functional water point by LGAs",
             legend.outside = TRUE)
-
-
 ```
 
 #### 6.3 Extreme Value Maps: Percentile Map
@@ -475,7 +468,7 @@ quantile(var[,1], percent)
 
 ***Step 3: Creating the get.var function***
 
-We will write an R function as shown below to extract a variable (i.e. *wp_nonfunctional*) as a vector out of an sf data.frame.
+We will write an R function as shown below to extract a variable (i.e. *wp_nonfunctional*) as a vector out of an sf data.frame.
 
 -   arguments:
 
@@ -521,7 +514,6 @@ percentmap <- function(vnam, df, legtitle=NA, mtitle="Percentile Map"){
 
 ```{r}
 percentmap("total_wp", NGA_wp)
-
 ```
 
 ### **7. First-Order Spatial Point Patterns Analysis Methods**
@@ -543,8 +535,6 @@ tm_shape(wp_functional) +
           border.col = "yellow",
           border.lwd = 0.5) +
   tm_view(set.zoom.limits = c(8,12))
-
-
 ```
 
 #### 7.1 Converting SF Data Frames to SP's Spatial Class
@@ -552,14 +542,11 @@ tm_shape(wp_functional) +
 The code chunk below uses as_Spatial() of sf package to convert the geospatial data from simple data feature data frame to sp's Spatial\* class.
 
 ```{r}
-
 nga_sp <- as_Spatial(wp_sf_nga)
 nga_sp
-
 ```
 
 ```{r}
-
 nga_functional_sp <- as_Spatial(wp_functional)
 nga_functional_sp
 ```
@@ -604,7 +591,6 @@ nga_ppp
 ```{r}
 nga_functional_ppp <- as(nga_functional_sp, "ppp")
 nga_functional_ppp
-
 ```
 
 ```{r}
@@ -643,28 +629,20 @@ The code chunk below is used to convert nga SpatialPolygon object into owin obje
 **ONLY NIGERIA - OSUN STATE\*\***
 
 ```{r}
-
 library(sf)
 library(spatstat)
-
 # Load the spatial point data
 nga_spp <- st_as_sf(NGA, coords = c("x", "y"))
-
 # Convert the "SpatialPoints" object to a polygon format using st_cast()
 nga_poly <- st_cast(nga_spp, "POLYGON")
-
 # Extract the polygon geometry component of the "sf" object
 nga_geom <- st_geometry(nga_poly)
-
 # Convert the polygon geometry component to a list of polygon objects
 nga_list_poly <- as.list(nga_geom)
-
 # Create an "owin" object from the list of polyggon objects
 nga_owin <- as.owin(nga_spp)
-
 # Analyze the point pattern using spatstat functions
 plot(nga_owin)
-
 ```
 
 The code chunk below is used to convert nga_geometry spatialpolygon object into owin object of spatstat.
@@ -674,29 +652,20 @@ The code chunk below is used to convert nga_geometry spatialpolygon object into 
 ```{r}
 library(sf)
 library(spatstat)
-
 # Load the spatial point data
 geometry_spp <- st_as_sf(geoNGA, coords = c("x", "y"))
-
 # Convert the "SpatialPoints" object to a polygon format using st_cast()
 nga_poly <- st_cast(geometry_spp, "POLYGON")
-
 # Extract the polygon geometry component of the "sf" object
 geom <- st_geometry(nga_poly)
-
 # Convert the polygon geometry component to a list of polygon objects
 nga_list_poly <- as.list(geom)
-
 #converting the spatial point into a projected coordinate system using the st_transform from the 'sf' package.
 nga_poly_proj <- st_transform(nga_poly, crs = "+proj=utm +zone=30 +ellps=WGS84")
-
 # Create an "owin" object from the list of polyggon objects
 nga_geometry_owin <- as.owin(nga_poly_proj)
-
 # Analyze the point pattern using spatstat functions
 plot(nga_geometry_owin)
-
-
 ```
 
 ```{r}
@@ -727,12 +696,10 @@ kde_nga_bw <- density(nga_ppp,
                       sigma=bw.diggle,
                       edge=TRUE,
                     kernel="gaussian")
-
 kde_nga_functional_bw <- density(nga_functional_ppp,
                       sigma=bw.diggle,
                       edge=TRUE,
                     kernel="gaussian")
-
 kde_nga_nonfunctional_bw <- density(nga_nonfunctional_ppp,
                       sigma=bw.diggle,
                       edge=TRUE,
@@ -770,7 +737,6 @@ nga_ppp.km <- rescale(nga_ppp, 100, "km")
 kde_nga.bw <- density(nga_ppp.km, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
 kde_nga_functional.bw <- density(nga_functional_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
 kde_nga_nonfunctional.bw <- density(nga_nonfunctional_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
-
 plot(kde_nga.bw)
 plot(kde_nga_functional.bw)
 plot(kde_nga_nonfunctional.bw)
@@ -829,7 +795,6 @@ The code chunk below is used to compute G-function using Gest() of spatat packag
 ```{r}
 G_nga_functional = Gest(nga_functional_ppp, correction = "border")
 plot(G_nga_functional, xlim=c(0,1900))
-
 ```
 
 ```{r}
@@ -935,21 +900,15 @@ To confirm the observed spatial correlation pattern, a hypothesis test will be c
 ***Confidence level = 95%***
 
 ```{r}
-
 wp_sf_clean <- wp_sf_nga %>%  filter(!status_clean=='unknown')
-
 nb = include_self(st_knn(st_geometry(wp_sf_clean), 6)) 
-
 wt = st_kernel_weights(nb, wp_sf_clean, "gaussian", adaptive = TRUE)
 f = wp_sf_clean %>%
   filter(status_clean == "Functional")
-
 A = f$status_clean
-
 nf = wp_sf_clean %>%
   filter(status_clean == "Non-Functional")
 B = nf$status_clean
-
 LCLQ = local_colocation(A, B, nb, wt, 49)
 LCLQ_wp = cbind(wp_sf_clean, LCLQ)
 ```

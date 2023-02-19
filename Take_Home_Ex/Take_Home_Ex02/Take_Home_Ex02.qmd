@@ -1,0 +1,11 @@
+---
+title: "Take-Home Exercise 2: Spatio-temporal Analysis of COVID-19 Vaccination Trends at the Sub-district level, DKI Jakarta"
+
+author: "Wong Kelly"
+date-modified: "`r Sys.Date()`"
+execute: 
+  echo: true
+  eval: true
+  warning: false
+editor: visual
+---
