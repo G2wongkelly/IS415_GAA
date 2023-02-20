@@ -1,0 +1,227 @@
+---
+title: "In-class Exercise 7"
+author: "Wong Kelly"
+date-modified: "`r Sys.Date()`"
+format: html
+editor: visual
+---
+
+### Installing and Loading the R packages
+
+```{r}
+pacman:: p_load(tidyverse,tmap,sf,sfdep, plotly,zoo)
+```
+
+### The Data
+
+For the purpose of this in-class exercise, the Hunan data sets will be used. There are two data sets in this use case, they are:
+
+-   Hunan, a geospatial data set in ESRI **shapefile format**, and
+
+-   Hunan_2012, an attribute data set in **csv format**
+
+### Importing geospatial data
+
+```{r}
+#st_read is a sf function
+Hunan <- st_read(dsn="data/geospatial",
+                     layer="Hunan")
+```
+
+### Importing aspatial data
+
+```{r}
+#from the package read(r) in tidyverse
+GDPPC <- read_csv("data/aspatial/Hunan_GDPPC.csv")
+
+```
+
+```{r}
+
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+hunan <- left_join(Hunan,hunan2012)%>%
+  select(1:4, 7, 15)
+```
+
+### Plotting a choropleth map
+
+```{r}
+tmap_mode("plot") 
+tm_shape(hunan) + #define spatial data you want
+  tm_fill("GDPPC", 
+          style = "quantile",
+          palette = "Blues",
+          title = "GDPPC") +
+  tm_layout(main.title = "Distribution of GDP per capita by district",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45,
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha=0.2)
+```
+
+### Step 1: Deriving contiguity weights: Queen's method
+
+In the code chunk below, queen method is used to derive the contiguity weights.
+
+```{r}
+wm_q <- hunan %>%
+  mutate(nb = st_contiguity(geometry),
+         wt = st_weights(nb,
+                         style = "W"),
+         .before = 1)
+```
+
+Computing Global Moran'I
+
+```{r}
+moranI <- global_moran(wm_q$GDPPC,
+                       wm_q$nb,
+                       wm_q$wt)
+```
+
+Computing Global Moran'I
+
+```{r}
+global_moran_test(wm_q$GDPPC,
+                  wm_q$nb,
+                  wm_q$wt)
+```
+
+Performing Global Morgan'I permutation test
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+global_moran_perm(wm_q$GDPPC,
+                  wm_q$nb,
+                  wm_q$wt,
+                nsim = 99)
+
+# run simulation at 99 will be 100
+```
+
+Computing local Moran's I
+
+```{r}
+lisa <- wm_q %>%
+  mutate(local_moran = local_moran(
+    GDPPC, nb, wt, nsim=99),
+    .before = 1) %>%
+  unnest(local_moran)
+#**unnest is important! (it is a list and need to unnest it to use the value)
+lisa
+
+```
+
+![](images/image-934400743.png){width="346"}
+
+ii is local moran i statistic
+
+#\*\*mean and pysal should be the same (use either the mean/pysal-python library that is doing the same thing)
+
+dont worry too much about median
+
+### Visualising local Moran's I
+
+```{r}
+tmap_mode("plot")
+tm_shape(lisa) +
+  tm_fill("ii") +
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8))
+```
+
+high positive autocorrelation concentrated at the green section
+
+### Visualising p-value of local Moran's I
+
+```{r}
+tmap_mode("plot")
+tm_shape(lisa) +
+  tm_fill("p_ii") +
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8))
+```
+
+should use p_ii_sim, p_ii is not a good one to use!Always use the one with several trial to ensure its more stable
+
+### Visualising local Moran's I
+
+should have another class "insignificance" to complete but is not included in this map! (think about how to do in own take-home assignment) - answer in 10.7.4 from hands on exercise
+
+for our own takehome assignment no need to do lisa but conduct g star, hot and cold spot!
+
+```{r}
+lisa_sig <- lisa %>%
+  filter(p_ii < 0.05)
+tmap_mode("plot")
+tm_shape(lisa) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+  tm_shape(lisa_sig) + 
+  tm_fill("mean") +
+  tm_borders(alpha = 0.4)
+```
+
+#hot and cold spot area analysis
+
+in general, we will use local G\* (perm) to ensure that it is stable by conducting simulation
+
+```{r}
+HCSA <- wm_q %>%
+  mutate(local_Gi = local_gstar_perm(
+    GDPPC, nb, wt, nsim=99),
+    .before = 1) %>%
+  unnest(local_Gi)
+HCSA
+
+```
+
+```{r}
+tmap_mode("view")
+#view will be interactive, plot will be fixed
+tm_shape(HCSA) +
+  tm_fill("gi_star") +
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8))
+```
+
+Visualising p-value of HCSA
+
+```{r}
+#they are not useful at all as we are more interested to find out those smaller than 0.05 but all these are more than that 
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_fill("p_sim") +
+  tm_borders(alpha=0.5) 
+```
+
+Creating a time series cube
+
+```{r}
+GDPPC_st <- spacetime(GDPPC, Hunan,
+                      .loc_col = "County",
+                      .time_col = "Year")
+GDPPC_st
+```
+
+```{r}
+GDPPC_nb <- GDPPC_st %>%
+  activate("geometry") %>%
+  mutate(
+    nb = include_self(st_contiguity(geometry)),
+    wt = st_weights(nb)
+  ) %>%
+  set_nbs("nb") %>%
+  set_wts("wt")
+```

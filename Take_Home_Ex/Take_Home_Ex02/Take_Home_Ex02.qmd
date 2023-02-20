@@ -9,3 +9,154 @@ execute:
   warning: false
 editor: visual
 ---
+
+### 1. Overview
+
+Since late December 2019, an outbreak of a novel coronavirus disease (COVID-19; previously known as 2019-nCoV) was reported in Wuhan, China, which had subsequently affected 210 countries worldwide. In general, COVID-19 is an acute resolved disease but it can also be deadly, with a 2% case fatality rate.
+
+The COVID-19 vaccination in Indonesia is an ongoing mass immunisation in response to the COVID-19 pandemic in Indonesia. On 13 January 2021, the program commenced when President Joko Widodo was vaccinated at the presidential palace. In terms of total doses given, Indonesia ranks third in Asia and fifth in the world.
+
+![](images/549b2ae32b24e82a48c812462eac72dc.jpg)
+
+According to wikipedia, as of 5 February 2023 at 18:00 WIB (UTC+7), 204,266,655 people had received the first dose of the vaccine and 175,131,893 people had been fully vaccinated; 69,597,474 of them had been inoculated with the booster or the third dose, while 1,585,164 had received the fourth dose. Jakarta has the highest percentage of population fully vaccinated with 103.46%, followed by Bali and Special Region of Yogyakarta with 85.45% and 83.02% respectively.
+
+#### 1.1 Problem Statement & Objectives
+
+*Despite its compactness, the cumulative vaccination rate are not evenly distributed within DKI Jarkata. **The question is where are the sub-districts with relatively higher number of vaccination rate and how they changed over time (July 2021 to June 2022).***
+
+Exploratory Spatial Data Analysis (ESDA) hold tremendous potential to address complex problems facing society. In this study, students are tasked to apply appropriate Local Indicators of Spatial Association (LISA) and Emerging Hot Spot Analysis (EHSA) to undercover the spatio-temporal trends of COVID-19 vaccination in DKI Jakarta.
+
+### **2. Data Acquisition Source**
+
+***Apstial data***
+
+For the purpose of this assignment, data from [Riwayat File Vaksinasi DKI Jakarta](https://riwayat-file-vaksinasi-dki-jakarta-jakartagis.hub.arcgis.com/) will be used. Daily vaccination data are provides. You are only required to download either the first day of the month or last day of the month of the study period. I opted to download the first day of the month data during the period from July 2021 to June 2022.
+
+***Geospatial data***
+
+For the purpose of this study, DKI Jakarta administration boundary 2019 will be used. The data set can be downloaded at Indonesia Geospatial portal, specifically at [this page](https://www.indonesia-geospasial.com/2020/04/download-shapefile-shp-batas-desa.html).
+
+***Data summary table***
+
+| Type       | Name                                                      | Format    | Description                                                                             |
+|------------|-----------------------------------------------------------|-----------|-----------------------------------------------------------------------------------------|
+| Geospatial | Shapefile (SHP) Batas Desa Provinsi DKI Jakarta           | shapefile | Sub-districts in DKI Jarkarta                                                           |
+| Aspatial   | Data Vaksinasi Berbasis Kelurahan dan Kecamatan (Monthly) | .xlsx     | Sub-district level data of COVID-19 cases in DKI Jarkata between July 2021 to June 2022 |
+
+### 3. Getting started
+
+#### 3.1 Installing and Loading the R packages
+
+```{r}
+pacman::p_load(sf, funModeling,maptools,raster, spatstat, tmap ,  tidyverse, sfdep, plyr)
+```
+
+The code chunk below is to check that all the required packages are installed if not, install them.
+
+```{r}
+if (!require(sf)) {
+install.packages("sf")
+}
+if (!require(funModeling)) {
+install.packages("funModeling")
+}
+if (!require(maptools)) {
+install.packages("maptools")
+}
+if (!require(raster)) {
+install.packages("raster")
+}
+if (!require(spatstat)) {
+install.packages("spatstat")
+}
+if (!require(tmap)) {
+install.packages("tmap")
+}
+if (!require(tidyverse)) {
+install.packages("tidyverse")
+}
+if (!require(sfdep)) {
+install.packages("sfdep")
+}
+if (!require(plyr)) {
+install.packages("plyr")
+}
+```
+
+### 4. Data Wrangling: Geospatial Data & Aspatial Data
+
+#### **4.1 Importing Geospatial Data**
+
+```{r}
+bd_jakarta <- st_read(dsn="data/geospatial",
+                     layer="BATAS_DESA_DESEMBER_2019_DUKCAPIL_DKI_JAKARTA")
+```
+
+From the output message, we learn that:
+
+-   Geometry type is multipolygon
+
+-   269 features and 161 fields
+
+-   Assigned CRS is WGS 84 (geographic coordinate system)
+
+-   Dimension is XY
+
+##### 4.1.1 Geospatial Data Pre-Processing
+
+Similar to our take-home assignment 1, before we can visualise our datasets and do the necessary analysis, we have to do data cleaning which is an important step in any data science task including geospatial data science. Things to check:
+
+-   Invalid geometries
+
+-   Missing value
+
+*(1) Invalid geometries*
+
+```{r}
+length(which(st_is_valid(bd_jakarta) == FALSE))
+```
+
+*(2) Missing value*
+
+```{r}
+bd_jakarta[rowSums(is.na(bd_jakarta))!=0,]
+```
+
+From the output generated above, we can tell that there are two particulars rows with missing values for KAB_KOTA (City), KECAMATAN (District), and DESA_KELUR (Village), as well as other fields such as OBJECT_ID 25645 and 25646. Therefore, we will need to remove them from the data.
+
+```{r}
+#removes rows that have an NA value in DESA_KELUR
+bd_jakarta <- na.omit(bd_jakarta,c("DESA_KELUR"))
+```
+
+```{r}
+#re-run to check if there is anymore NA value
+bd_jakarta[rowSums(is.na(bd_jakarta))!=0,]
+```
+
+#### **4.2 Importing Aspatial Data**
+
+1.  Rename all the files into simpler/readable forms to reduce complexity of naming convention
+2.  Convert all the .xlsx to .csv file format to use read_csv to import all 12 months of data
+3.  Analyse the dataset to see what are the columns that are needed for this analysis. Otherwise, remove them to better focus on what are needed.
+
+```{r}
+#import all aspatial datasets using read_csv for all 12 months 
+
+jarkata_2021Jul <- read_csv("data/aspatial/July 2021.csv")
+jarkata_2021Aug <- read_csv("data/aspatial/Aug 2021.csv")
+jarkata_2021Sep <- read_csv("data/aspatial/Sept 2021.csv")
+jarkata_2021Oct <- read_csv("data/aspatial/Oct 2021.csv")
+jarkata_2021Nov <- read_csv("data/aspatial/Nov 2021.csv")
+jarkata_2021Dec <- read_csv("data/aspatial/Dec 2021.csv")
+jarkata_2022Jan <- read_csv("data/aspatial/Jan 2022.csv")
+jarkata_2022Feb <- read_csv("data/aspatial/Feb 2022.csv")
+jarkata_2022Mar <- read_csv("data/aspatial/March 2022.csv")
+jarkata_2022Apr <- read_csv("data/aspatial/April 2022.csv")
+jarkata_2022May <- read_csv("data/aspatial/May 2022.csv")
+jarkata_2022Jun <- read_csv("data/aspatial/June 2022.csv")
+```
+
+#### **5. Data Pre-Processing**
+
+-   

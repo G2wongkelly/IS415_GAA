@@ -72,7 +72,7 @@ install.packages("tidyverse")
 
 ### 3. Data Wrangling: Geospatial Data & Aspatial Data
 
-### **3.1 Importing geoBoundaries Data into R**
+#### **3.1 Importing geoBoundaries Data into R**
 
 In this section of 3.1, st_read() of sf package will be used to import geospatial geoboundaries-NGA data set into R.
 
@@ -91,7 +91,7 @@ From the output message, we learn that:
 
 -   Dimension is XY
 
-### **3.2 Importing Geospatial NGA Data into R**
+#### **3.2 Importing Geospatial NGA Data into R**
 
 In this section of 3.2, st_read() of sf package will be used to import geospatial NGA dataset into R.
 
@@ -122,7 +122,7 @@ By examining both sf dataframe closely, we notice that NGA provide both LGA and 
 
 Hence, **NGA data.frame will be used for the subsequent processing.**
 
-### **3.3 Importing Aspatial Data into R**
+#### **3.3 Importing Aspatial Data into R**
 
 In this section of 3.3, read_csv() will be used to import asptial data set into R and we filter out only Nigeria, Osun data rows as those are what we interested in analysing for this project.
 
@@ -132,7 +132,7 @@ wp_nga <- read_csv("data/aspatial/WPdx.csv") %>%
   filter(`#clean_country_name` == "Nigeria")
 ```
 
-#### 3.3.1 Converting Water Point Data into SF Point Features
+##### 3.3.1 Converting Water Point Data into SF Point Features
 
 Step 1: Convert the wkt field into sfc field by using st_as_sfc() data type.
 
@@ -148,7 +148,7 @@ wp_sf <- st_sf(wp_nga, crs=4326)
 wp_sf
 ```
 
-#### 3.3.2 Transforming into Nigeria Projected Coordinate System
+##### 3.3.2 Transforming into Nigeria Projected Coordinate System
 
 ```{r}
 wp_sf <- wp_sf %>%

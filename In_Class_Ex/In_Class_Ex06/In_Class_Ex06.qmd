@@ -29,6 +29,8 @@ Hunan <- st_read(dsn="data/geospatial",
                      layer="Hunan")
 ```
 
+### Importing aspatial data
+
 ```{r}
 #from the package read(r) in tidyverse
 Hunan_2012 <- read_csv("data/aspatial/Hunan_2012.csv") 
