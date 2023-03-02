@@ -1,0 +1,835 @@
+---
+title: "Take-Home Exercise 2: Spatio-temporal Analysis of COVID-19 Vaccination Trends at the Sub-district level, DKI Jakarta"
+author: "Wong Kelly"
+date-modified: "`r Sys.Date()`"
+format: html
+execute: 
+  echo: true
+  eval: true
+  warning: false
+editor: visual
+---
+
+# 1. Overview
+
+Since late December 2019, an outbreak of a novel coronavirus disease (COVID-19; previously known as 2019-nCoV) was reported in Wuhan, China, which had subsequently affected 210 countries worldwide. In general, COVID-19 is an acute resolved disease but it can also be deadly, with a 2% case fatality rate.
+
+The COVID-19 vaccination in Indonesia is an ongoing mass immunisation in response to the COVID-19 pandemic in Indonesia. On 13 January 2021, the program commenced when President Joko Widodo was vaccinated at the presidential palace. In terms of total doses given, Indonesia ranks third in Asia and fifth in the world.
+
+![](images/549b2ae32b24e82a48c812462eac72dc.jpg)
+
+According to wikipedia, as of 5 February 2023 at 18:00 WIB (UTC+7), 204,266,655 people had received the first dose of the vaccine and 175,131,893 people had been fully vaccinated; 69,597,474 of them had been inoculated with the booster or the third dose, while 1,585,164 had received the fourth dose. Jakarta has the highest percentage of population fully vaccinated with 103.46%, followed by Bali and Special Region of Yogyakarta with 85.45% and 83.02% respectively.
+
+## 1.1 Problem Statement & Objectives
+
+*Despite its compactness, the cumulative vaccination rate are not evenly distributed within DKI Jarkata. **The question is where are the sub-districts with relatively higher number of vaccination rate and how they changed over time (July 2021 to June 2022).***
+
+Exploratory Spatial Data Analysis (ESDA) hold tremendous potential to address complex problems facing society. In this study, students are tasked to apply appropriate Local Indicators of Spatial Association (LISA) and Emerging Hot Spot Analysis (EHSA) to undercover the spatio-temporal trends of COVID-19 vaccination in DKI Jakarta.
+
+# **2. Data Acquisition Source**
+
+***Apstial data***
+
+For the purpose of this assignment, data from [Riwayat File Vaksinasi DKI Jakarta](https://riwayat-file-vaksinasi-dki-jakarta-jakartagis.hub.arcgis.com/) will be used. Daily vaccination data are provides. You are only required to download either the first day of the month or last day of the month of the study period. I opted to download the last day of each month data during the period from July 2021 to June 2022.
+
+***Geospatial data***
+
+For the purpose of this study, DKI Jakarta administration boundary 2019 will be used. The data set can be downloaded at Indonesia Geospatial portal, specifically at [this page](https://www.indonesia-geospasial.com/2020/04/download-shapefile-shp-batas-desa.html).
+
+***Data summary table***
+
+| Type       | Name                                                      | Format    | Description                                                                                      |
+|------------|-----------------|------------|--------------------------------|
+| Geospatial | Shapefile (SHP) Batas Desa Provinsi DKI Jakarta           | shapefile | Sub-districts in DKI Jakarta                                                                     |
+| Aspatial   | Data Vaksinasi Berbasis Kelurahan dan Kecamatan (Monthly) | .xlsx     | Sub-district level data of COVID-19 vaccine rates in DKI Jakarta between July 2021 and June 2022 |
+
+# 3. Getting started
+
+## 3.1 Installing and Loading the R packages
+
+```{r}
+pacman::p_load(sf,tmap,tidyverse,sfdep,plotly,zoo,readxl,Kendall)
+```
+
+The R packages installed that we will be using for analysis are:
+
+-   **sf:** used for importing, managing, and processing geospatial data
+
+-   **tmap:** used for creating thematic maps, such as choropleth and bubble maps
+
+-   **tidyverse:** a collection of packages for data science tasks
+
+-   **sfdep:** An interface for 'spdep' to integrate with 'sf' objects and the 'tidyverse'
+
+-   **plotly:** used for creating interactive and dynamic visualisations in R
+
+-   **zoo:** A popular package for working with time series data
+
+-   **readxl:** read excel files (.xlsx)
+
+-   **Kendall**: provide a set of tools for working with Kendall's rank correlation coefficient
+
+# 4. Data Wrangling: Geospatial Data & Aspatial Data
+
+## **4.1 Importing Geospatial Data**
+
+```{r}
+bd_jakarta <- st_read(dsn="data/geospatial",
+                     layer="BATAS_DESA_DESEMBER_2019_DUKCAPIL_DKI_JAKARTA")
+```
+
+From the output message, we learn that:
+
+-   Geometry type is multipolygon
+
+-   269 features and 161 fields
+
+-   Assigned CRS is WGS 84 (geographic coordinate system)
+
+-   Dimension is XY
+
+### 4.1.1 Geospatial Data Pre-Processing (Cleaning)
+
+Similar to our take-home assignment 1, before we can visualise our datasets and do the necessary analysis, we have to do data cleaning which is an important step in any data science task including geospatial data science. Things to check:
+
+-   Invalid geometries
+
+-   Missing value
+
+***(1) Invalid geometries***
+
+```{r}
+length(which(st_is_valid(bd_jakarta) == FALSE))
+```
+
+***(2) Missing value***
+
+```{r}
+bd_jakarta[rowSums(is.na(bd_jakarta))!=0,]
+```
+
+From the output generated above, we can tell that there are two particulars rows with missing values for KAB_KOTA (City), KECAMATAN (District), and DESA_KELUR (Village), as well as other fields such as OBJECT_ID 25645 and 25646. Therefore, we will need to remove them from the data.
+
+```{r}
+#remove rows that have an NA value in DESA_KELUR
+bd_jakarta <- na.omit(bd_jakarta,c("DESA_KELUR"))
+```
+
+```{r}
+#check if there are any more missing values
+bd_jakarta[rowSums(is.na(bd_jakarta))!=0,]
+```
+
+Great! The data now is cleaned with no missing values! :)
+
+### 4.1.2 Verifying & Data Transformation
+
+Let's firs retrieve the coordinate systems of bd_jakarta.
+
+```{r}
+st_crs(bd_jakarta)
+```
+
+According to the output message above, we learn that the current assigned coordinate system is WGS 84, the "World Geodetic System 1984". However, in the context of this data set, it is an Indonesian-specific geospatial data set. Therefore, we should be using the national CRS of Indonesia, **DGN95, the "Datum Geodesi Nasional 1995", ESPG code 23845**. Let's rectify that:
+
+```{r}
+#transform WGS84 to DGN95, ESPG code 23845
+bd_jakarta <- st_transform(bd_jakarta, 23845)
+st_crs(bd_jakarta)
+```
+
+From the above output message, we can tell that the original coordinate system (WGS 84) has been successfully transformed to Indonesia coordinate system (DGN 95).
+
+Now, let's plot the geometry to quickly visualise the data.
+
+### 4.1.3 Verifying & Removing Outer Islands
+
+```{r}
+plot(st_geometry(bd_jakarta))
+```
+
+As we can see, bd_jakarta includes both the mainland and the outer islands. However, in the context of this assignment, we are not interested in the outer islands. Therefore, we can eliminate them out.
+
+We will first output the unique values of PROVINSE (province) and KAB_KOTA (city) fields to inspect the distribution of clusters.
+
+```{r}
+# outputs unique values of province and city fields
+unique(bd_jakarta$"KAB_KOTA")
+unique(bd_jakarta$"PROVINSI")
+```
+
+Noticed from the output message above, the province are the same for all rows. However, as for KAB_KOTA, cities of Jakarta, realised that most of the cities have a JAKARTA prefix except for KEPULAUAN SERIBU (translated to 'Thousand Islands') refers to the outer islands. Just to check, we will plot the geometry of the geospatial data set once again with cluster of colours.
+
+```{r}
+tm_shape(bd_jakarta) + 
+  tm_polygons("KAB_KOTA")
+```
+
+Now we can clearly identify the outer islands and they are the "orange" mini clusters spreading outside the main islands. We will then remove them from our data set:
+
+```{r}
+bd_jakarta <- filter(bd_jakarta, KAB_KOTA != "KEPULAUAN SERIBU")
+```
+
+Let us check if they are all removed by plotting the map again!
+
+```{r}
+tm_shape(bd_jakarta) + 
+  tm_polygons("KAB_KOTA")
+```
+
+Yes! we have successfully excluded the outer islands from the map and left us with only the mainland which are the cities that start with the "JAKARTA" prefix.
+
+### 4.1.4 Retaining relevant columns & Renaming them with translation (English)
+
+There are too many columns in the date file bd_jakarta and we will need to only retain the fields that are relevant to our analysis which are the first 9 fields in the bd_jakarta data frame.
+
+```{r}
+bd_jakarta <- bd_jakarta[, 0:9]
+```
+
+Next, we need to also rename the retained columns to English language for ease of understanding for analysis later.
+
+```{r}
+bd_jakarta <- bd_jakarta %>% 
+  dplyr::rename(
+    Object_ID=OBJECT_ID,
+    Province=PROVINSI, 
+    City=KAB_KOTA, 
+    District=KECAMATAN, 
+    Village_Code=KODE_DESA, 
+    Village=DESA, 
+    Sub_District=DESA_KELUR,
+    Code=KODE, 
+    Total_Population=JUMLAH_PEN
+    )
+```
+
+We are done with our Geospatial data processing and now let's move on the Aspatial data!
+
+## **4.2 Importing Aspatial Data**
+
+In our "data/aspatial" folder, we have multiple sub-district level data of COVID-19 cases in DKI Jarkata between July 2021 to June 2022. Therefore, we would want to find a more efficient way to import all of them instead of one by one.
+
+In the code chunk below, the **`list.files()`** function is used to list all the files in the directory "data/aspatial/" that match the pattern "\*.xlsx". The resulting file names are stored in the **`xlsx_files`** variable.
+
+The **`lapply()`** function is used to iterate over the elements of **`xlsx_files`**, i.e., the file names, and apply the function provided in the second argument to each element. The function provided reads in the Excel file using the **`read_xlsx()`** function from the **`readxl`** package and returns a data frame.
+
+The resulting list of data frames is stored in the **`data_list`** variable.
+
+```{r}
+xlsx_files <- list.files(path = "data/aspatial/", pattern = "*.xlsx")
+
+data_list <- lapply(xlsx_files, function(file) {
+  read_xlsx(paste("data/aspatial/", file, sep = ""))
+})
+```
+
+### **4.2.1 Data Pre-Processing (Cleaning)**
+
+Firstly, let's take a quick glance of all the data sets in the list of imported aspatial files.
+
+```{r}
+data_list
+```
+
+Next, we are interested to know what are the columns available in each aspatial data file. Since we do not require all the columns, we then need to understand what are the columns needed for our analysis and retain them in the later part.
+
+```{r}
+# get the column names for each data frame in data_list
+column_names <- map(data_list, colnames)
+
+column_names
+```
+
+From the generated output message, I realised the differences were due to column names such as: " DOSIS 3". The reason could be due to the government's increasing immunization rates for various demographic groups and the quantity of vaccinations distributed across the country.
+
+However, the primary interest in this study is to analyse COVID-19 vaccination trends at the sub-district level, DKI Jakarta. Therefore, the breakdown of different demographics vaccination progress are less of our concern and we should eliminate them from the data sets.
+
+Our columns of interest (those that are relevant to our analysis and we will keep) -\> they are common in all data files therefore we can extract them:
+
+-   Kode Kelurahan (Village Code)
+
+-   Wilayah Kota (City Area)
+
+-   Kelurahan (Sub-District)
+
+-   Sasaran (Target)
+
+-   Belum Vaksin (Not Yet Vaccinated)
+
+-   Total Vaksin Diberikan (Total Vaccine Given)
+
+Now that we know our requirements, we can process the data step-by-step:
+
+***Step 1: Retain only the 6 relevant columns for all 12 data sets imported earlier***
+
+In this code, the map() function iterates through each data frame in the list my_data and applies the select() function to select the stated column names. The resulting list of data frames is stored in the variable my_data_same_columns.
+
+```{r}
+my_data_same_columns <- map(data_list, ~select(.x, "KODE KELURAHAN", "WILAYAH KOTA","SASARAN","KELURAHAN","BELUM VAKSIN","TOTAL VAKSIN\r\nDIBERIKAN"))
+my_data_same_columns
+```
+
+Now, all the data files have only 6 columns.
+
+***Step 2: Rename columns with translation (English headers)***
+
+```{r}
+# Define a named vector of new column names
+new_names <- c("Village_Code" = "KODE KELURAHAN", "City_Area" = "WILAYAH KOTA", "Sub_District"="KELURAHAN", "Target" = "SASARAN", "Unvaccinated" = "BELUM VAKSIN", "Vaccinated" = "TOTAL VAKSIN\r\nDIBERIKAN")
+
+# Use map to rename columns in each data frame in the list
+renamed_list <- map(my_data_same_columns, ~rename(.x, !!!new_names))
+
+```
+
+***Step 3: Create the date column to identify each file of different months in the list***
+
+```{r}
+date_value_1 <- "February 27, 2022"
+renamed_list_1 <- renamed_list[[1]]
+renamed_list_1$date <- as.Date(date_value_1, format = "%B %d, %Y")
+
+renamed_list_1
+
+date_value_2 <- "April 30, 2022"
+renamed_list_2 <- renamed_list[[2]]
+renamed_list_2$date <- as.Date(date_value_2, format = "%B %d, %Y")
+
+renamed_list_2
+
+date_value_3 <- "June 30, 2022"
+renamed_list_3 <- renamed_list[[3]]
+renamed_list_3$date <- as.Date(date_value_3, format = "%B %d, %Y")
+
+renamed_list_3
+
+date_value_4 <- "November 30, 2021"
+renamed_list_4 <- renamed_list[[4]]
+renamed_list_4$date <- as.Date(date_value_4, format = "%B %d, %Y")
+
+renamed_list_4
+
+date_value_5 <- "September 30, 2021"
+renamed_list_5 <- renamed_list[[5]]
+renamed_list_5$date <- as.Date(date_value_5, format = "%B %d, %Y")
+
+renamed_list_5
+
+date_value_6 <- "August 31, 2021"
+renamed_list_6 <- renamed_list[[6]]
+renamed_list_6$date <- as.Date(date_value_6, format = "%B %d, %Y")
+
+renamed_list_6
+
+date_value_7 <- "December 31, 2021"
+renamed_list_7 <- renamed_list[[7]]
+renamed_list_7$date <- as.Date(date_value_7, format = "%B %d, %Y")
+
+renamed_list_7
+
+date_value_8 <- "January 31, 2022"
+renamed_list_8 <- renamed_list[[8]]
+renamed_list_8$date <- as.Date(date_value_8, format = "%B %d, %Y")
+
+renamed_list_8
+
+date_value_9 <- "July 31, 2021"
+renamed_list_9 <- renamed_list[[9]]
+renamed_list_9$date <- as.Date(date_value_9, format = "%B %d, %Y")
+
+renamed_list_9
+
+date_value_10 <- "March 31, 2022"
+renamed_list_10 <- renamed_list[[10]]
+renamed_list_10$date <- as.Date(date_value_10, format = "%B %d, %Y")
+
+renamed_list_10
+
+date_value_11 <- "May 31, 2022"
+renamed_list_11 <- renamed_list[[11]]
+renamed_list_11$date <- as.Date(date_value_11, format = "%B %d, %Y")
+
+renamed_list_11
+
+date_value_12 <- "October 31, 2021"
+renamed_list_12 <- renamed_list[[12]]
+renamed_list_12$date <- as.Date(date_value_12, format = "%B %d, %Y")
+
+renamed_list_12
+
+```
+
+***Step 4: Join all aspatial files to one combined csv***
+
+```{r}
+combined_aspatial <- bind_rows(renamed_list_1,renamed_list_2,renamed_list_3,renamed_list_4,renamed_list_5,renamed_list_6,renamed_list_7, renamed_list_8,renamed_list_9,renamed_list_10,renamed_list_11, renamed_list_12)
+```
+
+Yay! We have successfully joined all 12 files!
+
+# 5. Joining Geospatial & Aspatial data frames
+
+Now that we have both Geospatial & Aspatial data sets cleaned, we will have to join both of them together in order to get location and vaccine rate data compiled into one file for map plotting analysis later on.
+
+Let us first take a quick look at their headers to tell us what are their common fields are:
+
+```{r}
+colnames(bd_jakarta)
+```
+
+```{r}
+colnames(combined_aspatial)
+```
+
+According to the output columns, it seems that these are the possible fields we can make a join:
+
+-   Village_Code -\> Village_Code
+
+-   City -\> City_Area
+
+-   Sub_District -\> Sub_District
+
+They should match up and give us a joined file! Let's try!
+
+```{r}
+combined_Jakarta_district_level <- left_join(bd_jakarta, combined_aspatial,by=c(
+                                "Village_Code"="Village_Code",
+                                "City"="City_Area",
+                                "Sub_District" = "Sub_District"))
+```
+
+Yes! We have successfully joined the two data files together :)
+
+Next, let's visualise our current "combined_Jakarta_district_level" in terms of target vaccine count and unvaccinated count (take note that it is important to converts the data frame to a spatial object of class "sf", which is required for making spatial visualizations with tmap):
+
+```{r}
+combined_Jakarta_district_level <- st_as_sf(combined_Jakarta_district_level)
+
+prelim_target = tm_shape(combined_Jakarta_district_level)+
+  tm_fill("Target") +
+  tm_borders(alpha = 0.2) +
+  tm_layout(main.title="Preliminary Target Count")
+
+prelim_Unvaccinated = tm_shape(combined_Jakarta_district_level)+
+  tm_fill("Unvaccinated") +
+  tm_borders(alpha = 0.2) +
+  tm_layout(main.title="Preliminary Unvaccinated Count")
+
+tmap_arrange(prelim_target, prelim_Unvaccinated)
+```
+
+## 5.1 Investigating & Correcting Mismatched Sub_District Records
+
+As seen from the output maps above, there are some 'missing' values even though we have done our data cleaning for both sets of data earlier. I suspect that this could be due to a mismatch in naming conventions, such as using "Hello" and "Hallo" in both data files, which results in these sub-districts being recognized as separate entities.
+
+However, this is just my assumption! Let us now investigate the sub_district field:
+
+```{r}
+# checks for unique values of Sub_District in cases_jakarta that aren't already present in bd_jakarta and vice versa
+combined_aspatial_subdistrict <- c(combined_aspatial$Sub_District)
+bd_subdistrict <- c(bd_jakarta$Sub_District)
+
+unique(combined_aspatial_subdistrict[!(combined_aspatial_subdistrict %in% bd_subdistrict)])
+```
+
+```{r}
+unique(bd_subdistrict[!(bd_subdistrict %in% combined_aspatial_subdistrict)])
+```
+
+From the code chunks above, we realised several naming mismatches between the two data fields. In order to correct them, we will begin by creating a data frame that includes the correct spellings for both aspatial_cases and geospatial_bd subdistricts. We will then output this information into a "kable" format.
+
+```{r}
+spelling <- data.frame(
+  Aspatial_Cases=c("BALE KAMBANG", "HALIM PERDANA KUSUMAH", "JATI PULO","KERENDANG","KRAMAT JATI", "PAL MERIAM", "PINANG RANTI", "RAWA JATI", "KAMPUNG TENGAH"),
+  Geospatial_BD=c("BALEKAMBAG", "HALIM PERDANA KUSUMA", "JATIPULO", "KRENDANG","KRAMATJATI","PALMERIAM", "PINANGRANTI", "RAWAJATI", "TENGAH")
+)
+
+# with dataframe a input, outputs a kable
+library(knitr)
+library(kableExtra)
+kable(spelling, caption="Mismatched Records") %>%
+  kable_material("hover", latex_options="scale_down")
+
+```
+
+Now that we know exactly which sub-district records are mismatched, we need to rectify the mismatches by remaining them:
+
+```{r}
+# where bd_jakarta is a mismatched value, replace with the correct value
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'BALEKAMBANG'] <- 'BALE KAMBANG'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'HALIM PERDANA KUSUMA'] <- 'HALIM PERDANA KUSUMAH'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'JATIPULO'] <- 'JATI PULO'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'KRENDANG'] <- 'KERENDANG'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'KRAMATJATI'] <- 'KRAMAT JATI'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'PALMERIAM'] <- 'PAL MERIAM'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'PINANGRANTI'] <- 'PINANG RANTI'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'RAWAJATI'] <- 'RAWA JATI'
+bd_jakarta$Sub_District[bd_jakarta$Sub_District == 'TENGAH'] <- 'KAMPUNG TENGAH'
+```
+
+Corrected them! Now, we have a standardised common identifier among our geospatial and aspatial dataframes. Let's join them once more:
+
+```{r}
+joined_cleared_mismatched <- left_join(bd_jakarta, combined_aspatial,
+                              by=c("Sub_District"="Sub_District")
+                              )
+```
+
+Now, let's once again visualise our updated "combined_Jakarta_district_level" in terms of target vaccine count and unvaccinated count at sub_district level to check if all missing values have been removed and cleared!
+
+```{r}
+
+prelim_target = tm_shape(joined_cleared_mismatched)+
+  tm_fill("Target") +
+  tm_borders(alpha = 0.2) +
+  tm_layout(main.title="Preliminary Target Count")
+
+prelim_Unvaccinated = tm_shape(joined_cleared_mismatched)+
+  tm_fill("Unvaccinated") +
+  tm_borders(alpha = 0.2) +
+  tm_layout(main.title="Preliminary Unvaccinated Count")
+
+tmap_arrange(prelim_target, prelim_Unvaccinated)
+```
+
+Done! We have successfully removed all the missing values! We can now move on to our next section of visualisation and analysis.
+
+# 6. Calculations
+
+Before we prepare the monthly vaccination rate maps, we need to first **compute the monthly vaccinate rate from July 2021 to June 2022 at sub-district** **level** (also known as KELURAHAN in Bahasa Indonesia). The formula to calculate this should be:
+
+$$
+Monthly Vaccination Rate = ((Target-Total unvaccinated count) / Target)*100)
+$$
+
+We are using target instead of population because for the case of vaccination, there are several rounds ie booster jabs etc therefore, taking the population would not be accurate in calculating the monthly vaccine rate for each sub-district level. We will use the target vaccine count instead.
+
+```{r}
+vaccine_rate <- combined_aspatial %>%
+  inner_join(bd_jakarta, by=c("Sub_District" = "Sub_District")) %>%
+  group_by(Sub_District, date) %>%
+  dplyr::summarise(`MonthlyVaccinationRate` = ((Target-Unvaccinated)/Target)*100) %>%
+  ungroup() %>% pivot_wider(names_from = date,
+              values_from = MonthlyVaccinationRate)
+
+```
+
+Next, we will also need to join the "vaccine_rate" data frame with the "bd_jakarta" data frame using the "Sub_District" variable as a common identifier. The resulting data frame will contain all the variables from both data frames where the "Sub_District" values match.
+
+The second line of code in the code chunk below converts the joined data frame to a spatial object of class "sf" using the "st_as_sf" function. This is necessary in order to make spatial visualizations and analysis.
+
+```{r}
+
+vaccine_rate <- vaccine_rate %>% left_join(bd_jakarta, by=c("Sub_District"="Sub_District"))
+
+vaccine_rate <- st_as_sf(vaccine_rate)
+```
+
+# 7. Mapping Monthly Vaccine Rate (12 months)
+
+Let's try to plot the data for one month first!
+
+The first line of code sets the plotting mode to "plot" which means that the map will be displayed on the plotting device.
+
+The second line of code sets the data to be plotted using "tm_shape" and specifies that we want to fill polygons using the "2022-02-27" variable. The "n" argument specifies the number of classes to be used for the classification, and "style" argument specifies the classification method (in this case, "jenks"). The "title" argument sets the title of the legend.
+
+The third line of code sets the layout of the map using "tm_layout". The "main.title" argument sets the title of the map, and "main.title.position" and "main.title.size" arguments specify the position and size of the title. The "legend.height" and "legend.width" arguments specify the dimensions of the legend box, and the "frame" argument adds a frame around the legend.
+
+Finally, the "tm_borders" function adds borders around each polygon with transparency set to 0.5.
+
+```{r}
+# Testing for one month
+tmap_mode("plot")
+tm_shape(vaccine_rate)+
+  tm_fill("2022-02-27", 
+          n= 6,
+          style = "jenks", 
+          title = "Vaccine Rate") +
+  tm_layout(main.title = "Distribution of COVID-19 Vaccine Rate in February 2022",
+            main.title.position = "center",
+            main.title.size = 1,
+            legend.height = 0.5, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5)
+```
+
+Next, as we will need 12 months maps to visualise the trends, we will create a helper function to do this!
+
+```{r}
+# A function to prepare for plotting 12 months maps
+jenks_plot <- function(df, varname) {
+  tm_shape(vaccine_rate) +
+    tm_polygons() +
+  tm_shape(df) +
+    tm_fill(varname, 
+          n= 6,
+          style = "jenks", 
+          title = "Vaccine Rate") +
+    tm_layout(main.title = varname,
+          main.title.position = "center",
+          main.title.size = 1.2,
+          legend.height = 0.45, 
+          legend.width = 0.35,
+          frame = TRUE) +
+    tm_borders(alpha = 0.5)
+}
+```
+
+Now, let's visualise the jenks plots for all months:
+
+```{r}
+# split it up into multiple arranges to make it easier to see
+tmap_mode("plot")
+tmap_arrange(jenks_plot(vaccine_rate, "2021-07-31"),
+             jenks_plot(vaccine_rate, "2021-08-31"),
+             jenks_plot(vaccine_rate, "2021-09-30"),
+             jenks_plot(vaccine_rate, "2021-10-31"))
+```
+
+```{r}
+tmap_arrange(jenks_plot(vaccine_rate, "2021-11-30"),
+             jenks_plot(vaccine_rate, "2021-12-31"),
+             jenks_plot(vaccine_rate, "2022-01-31"),
+             jenks_plot(vaccine_rate, "2022-02-27"))
+```
+
+```{r}
+tmap_arrange(jenks_plot(vaccine_rate, "2022-03-31"),
+             jenks_plot(vaccine_rate, "2022-04-30"),
+             jenks_plot(vaccine_rate, "2022-05-31"),
+             jenks_plot(vaccine_rate, "2022-06-30"))
+```
+
+## 7.1 Analysis
+
+The aim of utilizing choropleth analysis in this section is to gain insights into the progress of vaccination rates over time and pinpoint the sub-districts that exhibit the most notable vaccination rates between July 2021 and June 2022. Based on the twelve maps presented, we can derive the following observations:
+
+-   The general trend of the vaccine spread (regardless of sub-districts) in DKI, Jakarta seems to be increasing over time where the peak was in the last quarter and the color gradient shifted gradually from yellow to red in the subsequent two quarters.
+
+-   From the 12 maps, it is evident that February 2022 stands out as the month with the highest concentration of the darkest shaded areas, indicating a widespread push by the government for nationwide vaccination during that specific month and year.
+
+-   By the end of 2022 June, out of all the sub-districts in DKI Jakarta, HALIM PERDANA KUSUMAH has the largest number of vaccinated individuals. On the other hand, KEBON MELATI has the lowest number of vaccinated individuals.
+
+# 8. Local Gi\* Analysis
+
+## 8.1 Computing local Gi\* statistics
+
+Emerging Hot Spot Analysis (EHSA) is a spatio-temporal analysis method for revealing and describing how hot spot and cold spot areas evolve over time. The analysis consist of four main steps:
+
+-   Building a space-time cube,
+
+-   Calculating Getis-Ord local Gi\* statistic for each bin by using an FDR correction,
+
+-   Evaluating these hot and cold spot trends by using Mann-Kendall trend test,
+
+-   Categorising each study area location by referring to the resultant trend z-score and p-value for each location with data, and with the hot spot z-score and p-value for each bin.
+
+```{r}
+# select columns: Sub_District, Target, Unvaccinated and date from joined_cleared_mismatched
+vacc_attr_table <- joined_cleared_mismatched %>% select(8,12,13,15) %>% st_drop_geometry()
+
+
+#create a new vaccination column with the calculated vaccination rate for each row
+vacc_attr_table$vaccintion_rate <- (vacc_attr_table$Target - vacc_attr_table$Unvaccinated) / vacc_attr_table$Target*100
+
+#Extract only the date, sub_district, and vaccination rate
+vacc_attr_table <- tibble(vacc_attr_table %>% select(1,4,5))
+
+```
+
+***Step 1: Creating a time series cube***
+
+```{r}
+vacc_st <- spacetime(vacc_attr_table, bd_jakarta,
+                      .loc_col = "Sub_District",
+                      .time_col = "date")
+
+#check if vacc_st is spacetime_cube valid before moving on
+is_spacetime(vacc_st)
+is_spacetime_cube(vacc_st)
+
+```
+
+The TRUE return confirms that vacc_st object is indeed an time-space cube that means the observations for locations are complete!
+
+***Step 2: Computing Gi\****
+
+The code chunk below will be used to identify neighbors to derive an inverse distance weights.
+
+-   activate() is used to activate the geometry context
+
+-   mutate() is used to create two new columns nb and wt
+
+-   Then we will activate the data context again and copy over the nb and wt columns to each time-slick using set_wts() and set_nbs()
+
+```{r}
+
+vacc_nb <- vacc_st %>%
+  activate("geometry") %>%
+  mutate(nb = include_self(st_contiguity(geometry)),
+         wt = st_inverse_distance(nb, geometry,
+                                  scale = 1,
+                                  alpha = 1),
+         .before = 1) %>%
+  
+  set_wts("wt") %>%
+  set_nbs("nb")
+
+```
+
+***Step 3: Manually calculate the local Gi\* for each location (group by date)***
+
+```{r}
+gi_stars <- vacc_nb %>% 
+  group_by(date) %>% 
+  mutate(gi_star = local_gstar_perm(
+    vaccintion_rate, nb, wt)) %>% 
+  tidyr::unnest(gi_star)
+```
+
+# **9.Emerging Hot Spot Analysis (EHSA)**
+
+## 9.1 Mann-Kendall Test
+
+The Mann-Kendall Test is a statistical test used to detect trends in time series data. It does not require any assumptions about the distribution of data.
+
+The purpose of the Mann-Kendall test is to determine whether there is a significant trend in a time series, and if so, whether the trend is increasing or decreasing over time. The test is based on the ranks of the data values, rather than the actual values themselves, which makes it robust to outliers and other types of data anomalies.
+
+If the p-value of the test is less than a pre-determined significance level (e.g., 0.05), then we can conclude that there is a significant trend in the data.
+
+As stated in the assignment, we will need to select three sub-districts and describe the temporal trends, the three sub-districts I selected are as below:
+
+```{r}
+# Sub_district -- LAGAO
+lagoa_MK <- gi_stars %>% 
+  ungroup() %>% 
+  filter(Sub_District == "LAGOA") |> 
+  select(Sub_District, date, gi_star)
+
+# Sub_district -- KOJA
+koja_MK <- gi_stars %>% 
+  ungroup() %>% 
+  filter(Sub_District == "KOJA") |> 
+  select(Sub_District, date, gi_star)
+
+# Sub_district -- ROROTAN
+rorotan_MK <- gi_stars %>% 
+  ungroup() %>% 
+  filter(Sub_District == "ROROTAN") |> 
+  select(Sub_District, date, gi_star)
+
+```
+
+Next, we will plot the result by using ggplot2 functions.
+
+```{r}
+
+p1 <- ggplot(data = lagoa_MK, 
+       aes(x = date, 
+           y = gi_star)) +
+  geom_line() +
+  theme_light()
+
+ggplotly(p1)
+
+p2 <- ggplot(data = koja_MK, 
+       aes(x = date, 
+           y = gi_star)) +
+  geom_line() +
+  theme_light()
+
+ggplotly(p2)
+
+p3 <- ggplot(data = rorotan_MK, 
+       aes(x = date, 
+           y = gi_star)) +
+  geom_line() +
+  theme_light()
+
+ggplotly(p3)
+
+```
+
+### 9.1.1 Analysis
+
+The Mann-Kendall statistical test for trend generated above is used to assess whether a set of data values is increasing over time or decreasing over time, and whether the trend in either direction is statistically significant. The Mann-Kendall test does NOT assess the magnitude of change. We will form two hypothesis first:
+
+-   Null Hypothesis: There is no monotonic trend in the series
+
+-   Alternate Hypothesis: A trend exists. This trend can be positive, negative, or non-null
+
+Now, let us analyse the charts generated for the three selected sub-districts: LAGAO, KOJA, and ROROTAN.
+
+-   The gi_star value for LAGAO sub-district is in the range of -1 to -4, for KOJA sub-district is 0 to -2, and for ROROTAN is 1 to -1.
+
+```{=html}
+<!-- -->
+```
+-   One similarity between all the three line charts is that there is an obvious drastic dropped in gi_star around the period October 2021 to Mid January 2022.
+
+-   From the three charts generated, we can tell that all of them have a negative trend.
+
+## 9.2 EHSA map of the Gi\* values of vaccination rate
+
+Lastly, we will perform EHSA analysis by using emerging_hotspot_analysis() of sfdep package. It takes a spacetime object x (vacc_st), and the variable of interest which in this case is vaccintion_rate.
+
+The k argument is used to specify the number of time lags which is set to 1 by default and nsim map numbers of simulation to be performed.
+
+```{r}
+ehsa <- emerging_hotspot_analysis(
+  x = vacc_st, 
+  .var = "vaccintion_rate", 
+  k = 1, 
+  nsim = 99
+)
+
+```
+
+### 9.2.1 Visualising EHSA
+
+Next, we will visualise the distribution of EHSA classes in bar chart using ggplot2 function.
+
+```{r}
+ggplot(data = ehsa,
+       aes(x = classification)) +
+  geom_bar()
+
+```
+
+Next, we will need to join both bd_jakarta and ehsa together before we can plot maps and do any visualisation. The code chunk below illustrate how it's done:
+
+```{r}
+vaccine_ehsa <- bd_jakarta %>%
+  left_join(ehsa,
+            by = join_by(Sub_District == location))
+```
+
+Next, tmap functions will be used to plot a categorical choropleth map by using the code chunk below.
+
+The map will only display the significant (i.e. p-value \<0.05).
+
+```{r}
+ehsa_sig <- vaccine_ehsa  %>%
+  filter(p_value < 0.05)
+tmap_mode("plot")
+tm_shape(vaccine_ehsa) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+tm_shape(ehsa_sig) +
+  tm_fill("classification") + 
+  tm_borders(alpha = 0.4)
+
+```
+
+### 9.2.2 Analysis
+
+From the above generated map, we can tell that most of the classification are oscilating hotspot which means less than 90% of the time-step intervals have been statistically significant hot spots. The next higher classification is sporafic coldspot which means less than 90% of the time-step intervals have been statistically significant cold spots and none of the time-step intervals have been statistically significant cold spots.
+
+# 10. References & Resources Used
+
+Here are the list of resources used in this analysis, as well as their links. Special thanks to Seniors work samples and Prof Kam for all the detailed explanations and clear documentary posted!! :))
+
+https://www.researchgate.net/figure/The-Mann-Kendall-Z-Statistics-for-Monthly-Trend-Analysis_fig2_330824269
