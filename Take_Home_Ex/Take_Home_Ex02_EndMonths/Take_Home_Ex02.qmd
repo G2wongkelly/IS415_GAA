@@ -690,6 +690,21 @@ gi_stars <- vacc_nb %>%
   tidyr::unnest(gi_star)
 ```
 
+\*\*Not sure why I cant populate my Gi\* graphs and I am running out of time! Will work on it again to test :D Here's my broken code chunks
+
+\(1\) #error in gi_stars not sf object!
+tmap_mode("plot")
+tm_shape(gi_stars) +
+tm_fill("gi_star") +
+tm_borders(alpha = 0.5) +
+tm_view(set.zoom.limits = c(6,8))
+
+\(2\) #error in gi_stars not sf object!
+tmap_mode("plot")
+tm_shape(gi_stars) +
+tm_fill("p_sim") +
+tm_borders(alpha = 0.5)
+
 # **9.Emerging Hot Spot Analysis (EHSA)**
 
 ## 9.1 Mann-Kendall Test
@@ -765,9 +780,8 @@ Now, let us analyse the charts generated for the three selected sub-districts: L
 
 -   The gi_star value for LAGAO sub-district is in the range of -1 to -4, for KOJA sub-district is 0 to -2, and for ROROTAN is 1 to -1.
 
-```{=html}
 <!-- -->
-```
+
 -   One similarity between all the three line charts is that there is an obvious drastic dropped in gi_star around the period October 2021 to Mid January 2022.
 
 -   From the three charts generated, we can tell that all of them have a negative trend.
