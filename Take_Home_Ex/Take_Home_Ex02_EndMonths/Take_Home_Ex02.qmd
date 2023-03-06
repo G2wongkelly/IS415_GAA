@@ -39,7 +39,7 @@ For the purpose of this study, DKI Jakarta administration boundary 2019 will be 
 ***Data summary table***
 
 | Type       | Name                                                      | Format    | Description                                                                                      |
-|------------|-----------------|------------|--------------------------------|
+|------------|-----------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|
 | Geospatial | Shapefile (SHP) Batas Desa Provinsi DKI Jakarta           | shapefile | Sub-districts in DKI Jakarta                                                                     |
 | Aspatial   | Data Vaksinasi Berbasis Kelurahan dan Kecamatan (Monthly) | .xlsx     | Sub-district level data of COVID-19 vaccine rates in DKI Jakarta between July 2021 and June 2022 |
 
@@ -692,18 +692,9 @@ gi_stars <- vacc_nb %>%
 
 \*\*Not sure why I cant populate my Gi\* graphs and I am running out of time! Will work on it again to test :D Here's my broken code chunks
 
-\(1\) #error in gi_stars not sf object!
-tmap_mode("plot")
-tm_shape(gi_stars) +
-tm_fill("gi_star") +
-tm_borders(alpha = 0.5) +
-tm_view(set.zoom.limits = c(6,8))
+\(1\) #error in gi_stars not sf object! tmap_mode("plot") tm_shape(gi_stars) + tm_fill("gi_star") + tm_borders(alpha = 0.5) + tm_view(set.zoom.limits = c(6,8))
 
-\(2\) #error in gi_stars not sf object!
-tmap_mode("plot")
-tm_shape(gi_stars) +
-tm_fill("p_sim") +
-tm_borders(alpha = 0.5)
+\(2\) #error in gi_stars not sf object! tmap_mode("plot") tm_shape(gi_stars) + tm_fill("p_sim") + tm_borders(alpha = 0.5)
 
 # **9.Emerging Hot Spot Analysis (EHSA)**
 
