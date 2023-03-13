@@ -29,6 +29,8 @@ website:
             href: "In_Class_Ex/In_Class_Ex07/In_Class_Ex07.qmd"
           - text: "In-Class Exercise 8"
             href: "In_Class_Ex/In_Class_Ex08/In_Class_Ex08.qmd"
+          - text: "In-Class Exercise 9"
+            href: "In_Class_Ex/In_Class_Ex09/In_Class_Ex09.qmd"
 
             
       - text: "Take-Home Exercise"
@@ -37,6 +39,8 @@ website:
             href: "Take_Home_Ex/Take_Home_Ex01/Take_Home_Ex01.qmd"
           - text: "Take-Home Exercise 2"
             href: "Take_Home_Ex/Take_Home_Ex02_EndMonths/Take_Home_Ex02.qmd"
+          - text: "Take-Home Exercise 3"
+            href: "Take_Home_Ex/Take_Home_Ex03/Take_Home_Ex03.qmd"
             
     right: 
       - href: index.qmd

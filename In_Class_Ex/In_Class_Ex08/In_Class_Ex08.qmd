@@ -10,6 +10,7 @@ editor: visual
 
 ```{r}
 pacman::p_load(olsrr, ggpubr, sf, spdep, GWmodel, tmap, tidyverse, gtsummary)
+
 ```
 
 # Geospatial Data Wrangling
