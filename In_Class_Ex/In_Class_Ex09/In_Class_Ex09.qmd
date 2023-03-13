@@ -54,7 +54,7 @@ summary(price_mlr)
 write_rds(price_mlr, "data/model/price_mlr.rds")
 ```
 
-# GWR predictive method 
+# GWR predictive method
 
 In this section, GWR method will be used calibrate a model to predict the HDB resale prices
 
@@ -65,7 +65,7 @@ train_data_sp
 
 # Preparing Coordinates Data
 
-## Extracting Coordinates Data 
+## Extracting Coordinates Data
 
 The code chunk below extract the x,y coordinates of the full, training and test data sets
 
@@ -89,7 +89,7 @@ train_data <- train_data %>%
   st_drop_geometry()
 ```
 
-# Calibrating Random Forest 
+# Calibrating Random Forest
 
 ```{r}
 set.seed(1234)
@@ -141,7 +141,7 @@ test_data <- cbind(test_data, coords_test) %>%
   st_drop_geometry()
 ```
 
-## Predicting with test data 
+## Predicting with test data
 
 Next, predict.grf() of spatialML package will be used to predict the resale value by using the test data and gwRF_adapative model caliberated earlier.
 

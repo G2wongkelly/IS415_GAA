@@ -509,5 +509,19 @@
     "title": "In_Class_Ex09",
     "section": "Extracting Coordinates Data",
     "text": "Extracting Coordinates Data\nThe code chunk below extract the x,y coordinates of the full, training and test data sets\n\ncoords <- st_coordinates(mdata)\ncoords_train <- st_coordinates(train_data)\ncoords_test <- st_coordinates(test_data)\n\n\ncoords_train <- write_rds(coords_train, \"data/model/coords_train.rds\")\ncoords_test <- write_rds(coords_test, \"data/model/coords_test.rds\")"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex09/In_Class_Ex09.html#preparing-the-test-data",
+    "href": "In_Class_Ex/In_Class_Ex09/In_Class_Ex09.html#preparing-the-test-data",
+    "title": "In_Class_Ex09",
+    "section": "Preparing the test data",
+    "text": "Preparing the test data\nThe code chunk below will be used to combine the test data with its corresponding coordinates data\n\ntest_data <- cbind(test_data, coords_test) %>%\n  st_drop_geometry()"
+  },
+  {
+    "objectID": "In_Class_Ex/In_Class_Ex09/In_Class_Ex09.html#predicting-with-test-data",
+    "href": "In_Class_Ex/In_Class_Ex09/In_Class_Ex09.html#predicting-with-test-data",
+    "title": "In_Class_Ex09",
+    "section": "Predicting with test data",
+    "text": "Predicting with test data\nNext, predict.grf() of spatialML package will be used to predict the resale value by using the test data and gwRF_adapative model caliberated earlier.\n(run the code at home)\ngwRF_pred <- predict.grf(gwRF_adaptive,\ntest_data,\nx.var.name = “X”,\ny.var.name = “Y”,\nlocal.w = 1,\nglobal.w = 0)"
   }
 ]
