@@ -1,0 +1,95 @@
+---
+title: "In_Class_Ex10"
+author: "Wong Kelly"
+date-modified: "`r Sys.Date()`"
+format: html
+execute: 
+  echo: true
+  eval: true
+  warning: false
+editor: visual
+---
+
+# Load R Packages
+
+```{r}
+pacman::p_load(tmap, SpatialAcc, sf, 
+               ggstatsplot, reshape2,
+               tidyverse)
+```
+
+# Geospatial Data Wrangling
+
+## Importing Geospatial Data
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_NO_SEA_PL")
+```
+
+```{r}
+hexagons <- st_read(dsn = "data/geospatial", layer = "hexagons") 
+```
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial", layer = "ELDERCARE") 
+```
+
+# Updating CRS information
+
+```{r}
+mpsz <- st_transform(mpsz, 3414)
+eldercare <- st_transform(eldercare, 3414)
+hexagons <- st_transform(hexagons, 3414)
+```
+
+```{r}
+st_crs(mpsz)
+```
+
+## Cleaning and updating attribute fields of the geospatial data
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+```
+
+```{r}
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+# Aspatial Data Handling and Wrangling
+
+## Importing Distance Matrix
+
+```{r}
+ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", skip = 0)
+```
+
+## Tidying distance matrix
+
+```{r}
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  spread(destination_id, total_cost)%>%
+  select(c(-c('origin_id')))
+```
+
+```{r}
+distmat_km <- as.matrix(distmat/1000)
+```
+
+## Computing Distance Matrix (Optional)
+
+```{r}
+#eldercare_coord <- st_coordinates(eldercare)
+#hexagon_coord <- st_coordinates(hexagon)
+```
+
+```{r}
+#EucMatrix <- SpatialAcc:: distance(hexogon_coord,
+                                   #eldercare_coord,
+                                   #type = "euclidean")
+```
