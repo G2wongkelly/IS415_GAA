@@ -41,6 +41,8 @@ website:
             href: "Take_Home_Ex/Take_Home_Ex02_EndMonths/Take_Home_Ex02.qmd"
           - text: "Take-Home Exercise 3"
             href: "Take_Home_Ex/Take_Home_Ex03/Take_Home_Ex03.qmd"
+          - text: "Take-Home Exercise 3 Updated"
+            href: "Take_Home_Ex/Take_Home_Ex03/Take_Home_Ex03_Updated.qmd"
             
     right: 
       - href: index.qmd
