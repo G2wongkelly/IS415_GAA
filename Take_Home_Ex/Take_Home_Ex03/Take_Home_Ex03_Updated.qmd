@@ -32,7 +32,7 @@ In addition, we will also include other locational factors such as proximity of 
 ***Data Summary Table***
 
 | Type                           | Name                                  | Format   | Source                                                      |
-|-----------------|-----------------|-----------------|---------------------|
+|------------------|------------------|------------------|-------------------|
 | Aspatial                       | HDB resale flat prices                | .csv     | data.gov.sg                                                 |
 | Geospatial                     | Master plan 2014 subzone web boundary | .shp     | data.gov.sg                                                 |
 | Geospatial (Locational factor) | Elder care services                   | .shp     | data.gov.sg                                                 |
@@ -51,7 +51,7 @@ In addition, we will also include other locational factors such as proximity of 
 ## 3.1 Installing and Loading the R packages
 
 ```{r}
-pacman::p_load(olsrr, sf, sfdep, GWmodel, tmap, tidyverse, gtsummary, SpatialML,rsample,Metrics, jsonlite,httr,rvest,sp)
+pacman::p_load(olsrr, sf, spdep, sfdep, GWmodel, tmap, tidyverse, gtsummary, SpatialML,rsample,Metrics, jsonlite,httr,rvest,sp)
 ```
 
 The R packages installed that we will be using for take-home assignment 3 are:
@@ -94,7 +94,7 @@ As mentioned in the previous section of 4.1, we are only interested in (1) HDB 4
 
 ```{r}
 rs_subset <-  filter(resale,flat_type == "4 ROOM") %>% 
-              filter(month >= "2021-01" & month <= "2022-12")
+              filter(month >= "2021-01" & month <= "2023-03")
 ```
 
 From the results above, we can tell that:
@@ -242,10 +242,26 @@ get_coords <- function(add_list){
 
 ***Step 3: Call get_coords function to retrieve resale coordinates***
 
-#Can include evaluation: false then afterwards save it into a file
+After retrieving the coords for the first time, it will be commented out to reduce the rendering time as the time taken to run and process the code chunk below is about 5 to 6 minutes each time.
 
 ```{r}
-coords <- get_coords(add_list)
+
+#coords <- get_coords(add_list)
+```
+
+The code chunk below will be used to save the coords data file in csv format for future use.
+
+```{r}
+
+#write_rds(coords,"data/rds/coords.csv")
+#coords
+```
+
+We will then read the coords.csv data and use it for the following parts.
+
+```{r}
+coords <- read_rds("data/rds/coords.csv")
+coords
 ```
 
 ### 4.1.4 Combine Resale and Coordinates Data
@@ -320,12 +336,8 @@ train_sf <- st_read("data/geospatial_locational_GC/mrtstation/lta-mrt-station-ex
 elder_sf <- st_read(dsn = "data/geospatial_locational_GC/eldercare-services", layer="ELDERCARE")
 bus_sf <- st_read(dsn = "data/geospatial_locational_GC/BusStopLocation", layer="BusStop")
 kindergarten_sf <- st_read(dsn = "data/geospatial_locational_GC/kindergartens", layer="KINDERGARTENS")
+park_sf <- st_read(dsn = "data/geospatial_locational_GC/nationalparks", layer="NATIONALPARKS")
 
-#csv file
-mall_sf <- read_csv("data/geospatial_locational_GC/Mall-Coordinates/mall_coordinates_updated.csv")
-
-#kml file
-park_sf <- st_read("data/geospatial_locational_GC/parks/parks.kml")
 ```
 
 From the results above, we can see that the datasets are all in different CRS:
@@ -354,6 +366,7 @@ elder_sf <- st_set_crs(elder_sf, 3414)
 train_sf <- st_set_crs(train_sf, 3414)
 bus_sf <- st_set_crs(bus_sf, 3414)
 kindergarten_sf <- st_set_crs(kindergarten_sf, 3414)
+park_sf <- st_set_crs(park_sf, 3414)
 
 hawker_sf <- hawker_sf %>%
   st_transform(crs = 3414)
@@ -362,8 +375,6 @@ supermarket_sf <- supermarket_sf %>%
 student_sf <- student_sf %>%
   st_transform(crs = 3414)
 dengue_sf <- dengue_sf %>%
-  st_transform(crs = 3414)
-park_sf <- park_sf %>%
   st_transform(crs = 3414)
 ```
 
@@ -404,7 +415,7 @@ From the results above, we can see that there are no invalid geometries for all 
 
 ## 5.3 Calculate Proximity
 
-### 5.3.1 Create get_prox Function to Calculate Proximity
+### 5.3.1 Create get_prox function to calculate proximity
 
 ```{r}
 get_prox <- function(df1, df2, varname){
@@ -424,7 +435,7 @@ get_prox <- function(df1, df2, varname){
 }
 ```
 
-### 5.3.1 Call Get_Prox Function
+### 5.3.2 Call get_prox function
 
 ```{r}
 rs_coords_sf <- get_prox(rs_coords_sf, elder_sf, "PROX_ELDERLYCARE") 
@@ -436,10 +447,9 @@ rs_coords_sf <- get_prox(rs_coords_sf, supermarket_sf, "PROX_SUPERMARKET")
 rs_coords_sf <- get_prox(rs_coords_sf, student_sf, "PROX_STUDENT")
 rs_coords_sf <- get_prox(rs_coords_sf, dengue_sf, "PROX_DENGUE")
 rs_coords_sf <- get_prox(rs_coords_sf, park_sf, "PROX_PARK")
-
 ```
 
-5.3.1 Create get_within Function to Calculate factors that are within declared distance
+### 5.3.3 Create get_within function to calculate factors that are within the declared distance
 
 ```{r}
 get_within <- function(df1, df2, threshold_dist, varname){
@@ -460,15 +470,21 @@ get_within <- function(df1, df2, threshold_dist, varname){
 
 ```
 
-5.3.2 Call get_within Function
+**5.3.4 Call get_within function**
+
+-   ***Kindergartens that are within the distance of 350m***
 
 ```{r}
 rs_coords_sf <- get_within(rs_coords_sf, kindergarten_sf, 350, "WITHIN_350M_KINDERGARTEN")
 ```
 
+-   ***Childcare services that are within the distance of 350m***
+
 ```{r}
 rs_coords_sf <- get_within(rs_coords_sf, student_sf, 350, "WITHIN_350M_CHILDCARE")
 ```
+
+-   ***Bus stop that are within the distance of 350m***
 
 ```{r}
 rs_coords_sf <- get_within(rs_coords_sf, bus_sf, 350, "WITHIN_350M_BUS")
@@ -476,10 +492,595 @@ rs_coords_sf <- get_within(rs_coords_sf, bus_sf, 350, "WITHIN_350M_BUS")
 
 # 6. Import Geospatial Locational Factors Data (WITHOUT geographic coordinates)
 
-## 6.2 CBD
+In this section, we will retrieve those locational factors that do not have any geographic coordinates.
 
-6.3 Shopping Malls
+## 6.1 CBD
 
-6.4 Primary Schools
+Since we are unable to find a list of Singapore Central Business District (CBD) data list and its corresponding geographic coordinates, we will need to do a search of the latitude and longitude of Downtown Core also known as CBD.
 
-6.5 Good Primary Schools
+Latitude: 1.287953
+
+Longitude: 103.851784
+
+Then, we can create a dataframe consisting of the latitude and longitude coordinates of the CBD area then transform it to EPSG 3414 (SVY21) format.
+
+***Step 1: Store CBD coordinates in database***
+
+```{r}
+name <- c('CBD Area')
+latitude= c(1.287953)
+longitude= c(103.851784)
+cbd_coords <- data.frame(name, latitude, longitude)
+```
+
+***Step 2: Assign and transform CRS***
+
+```{r}
+cbd_coords_sf <- st_as_sf(cbd_coords,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+st_crs(cbd_coords_sf)
+```
+
+From the results above, we can see that:
+
+-   Coordinates for CBD area in EPSG 3414 (SVY21) format is c(30055.05, 30040.83)
+
+-   We can now run out get_prox function to calculate the proximity of HDB and CBD area!
+
+***Step 3: Call get_prox function***
+
+```{r}
+rs_coords_sf <- get_prox(rs_coords_sf, cbd_coords_sf, "PROX_CBD") 
+```
+
+## 6.2 Shopping Malls
+
+Similar to CBD, there are no exisiting datasets that we can download for shopping malls in Singapore with corresponding geographic coordinates. Therefore, we would need to extract
+
+1.  Extract shopping malls from wikipedia
+
+```{r}
+url <- "https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore"
+malls_list <- list()
+
+for (i in 2:7){
+  malls <- read_html(url) %>%
+    html_nodes(xpath = paste('//*[@id="mw-content-text"]/div[1]/div[',as.character(i),']/ul/li',sep="") ) %>%
+    html_text()
+  malls_list <- append(malls_list, malls)
+}
+```
+
+```{r}
+malls_list
+```
+
+2.  call get_coords function
+
+```{r}
+malls_list_coords <- get_coords(malls_list) %>% 
+  rename("mall_name" = "address")
+```
+
+3.  Remove invalid shopping mall name
+
+```{r}
+malls_list_coords <- subset(malls_list_coords, mall_name!= "Yew Tee Shopping Centre")
+
+```
+
+4.  correct invalid mall names that can be found
+
+```{r}
+invalid_malls<- subset(malls_list_coords, is.na(malls_list_coords$postal))
+invalid_malls_list <- unique(invalid_malls$mall_name)
+corrected_malls <- c("Clarke Quay", "City Gate", "Raffles Holland V", "Knightsbridge", "Mustafa Centre", "GR.ID", "Shaw House",
+                     "The Poiz Centre", "Velocity @ Novena Square", "Singapore Post Centre", "PLQ Mall", "KINEX", "The Grandstand")
+
+for (i in 1:length(invalid_malls_list)) {
+  malls_list_coords <- malls_list_coords %>% 
+    mutate(mall_name = ifelse(as.character(mall_name) == invalid_malls_list[i], corrected_malls[i], as.character(mall_name)))
+}
+```
+
+5.  Create a list storing unique mall names
+
+```{r}
+malls_list <- sort(unique(malls_list_coords$mall_name))
+```
+
+6.  Call get_coords to retrieve coordinates of shopping malls again
+
+```{r}
+malls_coords <- get_coords(malls_list)
+```
+
+7.  Inspect results
+
+```{r}
+malls_coords[(is.na(malls_coords$postal) | is.na(malls_coords$latitude) | is.na(malls_coords$longitude)), ]
+
+```
+
+```{r}
+malls_sf <- st_as_sf(malls_coords,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+rs_coords_sf <- get_prox(rs_coords_sf, malls_sf, "PROX_MALL") 
+```
+
+## 6.4 Primary Schools
+
+```{r}
+pri_sch <- read_csv("data/geospatial_locational_nonGC/school-directory-and-information/general-information-of-schools.csv")
+```
+
+```{r}
+pri_sch <- pri_sch %>%
+  filter(mainlevel_code == "PRIMARY") %>%
+  select(school_name, address, postal_code, mainlevel_code)
+```
+
+```{r}
+glimpse(pri_sch)
+```
+
+```{r}
+prisch_list <- sort(unique(pri_sch$postal_code))
+```
+
+```{r}
+prisch_coords <- get_coords(prisch_list)
+```
+
+```{r}
+prisch_coords[(is.na(prisch_coords$postal) | is.na(prisch_coords$latitude) | is.na(prisch_coords$longitude)), ]
+
+```
+
+```{r}
+prisch_coords = prisch_coords[c("postal","latitude", "longitude")]
+pri_sch <- left_join(pri_sch, prisch_coords, by = c('postal_code' = 'postal'))
+```
+
+```{r}
+head(pri_sch)
+```
+
+```{r}
+prisch_sf <- st_as_sf(pri_sch,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+st_crs(prisch_sf)
+```
+
+```{r}
+rs_coords_sf <- get_within(rs_coords_sf, prisch_sf, 1000, "WITHIN_1KM_PRISCH")
+
+```
+
+```{r}
+head(rs_coords_sf)
+```
+
+## 6.5 Good Primary Schools (Top 10)
+
+```{r}
+url <- "https://www.salary.sg/2021/best-primary-schools-2021-by-popularity/"
+
+good_pri <- data.frame()
+
+schools <- read_html(url) %>%
+  html_nodes(xpath = paste('//*[@id="post-3068"]/div[3]/div/div/ol/li') ) %>%
+  html_text() 
+
+for (i in (schools)){
+  sch_name <- toupper(gsub(" – .*","",i))
+  sch_name <- gsub("\\(PRIMARY SECTION)","",sch_name)
+  sch_name <- trimws(sch_name)
+  new_row <- data.frame(pri_sch_name=sch_name)
+  # Add the row
+  good_pri <- rbind(good_pri, new_row)
+}
+
+top_good_pri <- head(good_pri, 10)
+```
+
+```{r}
+head(top_good_pri)
+```
+
+```{r}
+top_good_pri$pri_sch_name[!top_good_pri$pri_sch_name %in% prisch_sf$school_name]
+```
+
+```{r}
+good_pri_list <- unique(top_good_pri$pri_sch_name)
+```
+
+```{r}
+goodprisch_coords <- get_coords(good_pri_list)
+```
+
+```{r}
+goodprisch_coords[(is.na(goodprisch_coords$postal) | is.na(goodprisch_coords$latitude) | is.na(goodprisch_coords$longitude)), ]
+```
+
+```{r}
+top_good_pri$pri_sch_name[top_good_pri$pri_sch_name == "CHIJ ST. NICHOLAS GIRLS’ SCHOOL"] <- "CHIJ SAINT NICHOLAS GIRLS' SCHOOL"
+top_good_pri$pri_sch_name[top_good_pri$pri_sch_name == "ST. HILDA’S PRIMARY SCHOOL"] <- "SAINT HILDA'S PRIMARY SCHOOL"
+```
+
+```{r}
+good_pri_list <- unique(top_good_pri$pri_sch_name)
+```
+
+```{r}
+goodprisch_coords <- get_coords(good_pri_list)
+```
+
+```{r}
+goodprisch_coords[(is.na(goodprisch_coords$postal) | is.na(goodprisch_coords$latitude) | is.na(goodprisch_coords$longitude)), ]
+
+```
+
+```{r}
+goodpri_sf <- st_as_sf(goodprisch_coords,
+                    coords = c("longitude", 
+                               "latitude"),
+                    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+rs_coords_sf <- get_prox(rs_coords_sf, goodpri_sf, "PROX_GOOD_PRISCH")
+
+```
+
+```{r}
+rs_factors_rds <- write_rds(rs_coords_sf, "data/rds/rs_factors.rds")
+```
+
+```{r}
+rs_factors_rds <- read_rds("data/rds/rs_factors.rds")
+rs_factors_rds
+```
+
+7.  Import Data for Analysis
+    1.  Geospatial Data
+
+```{r}
+mpsz_sf <- st_read(dsn = "data/geospatial", layer="MP14_SUBZONE_WEB_PL")
+
+```
+
+```{r}
+st_crs(mpsz_sf)
+```
+
+```{r}
+mpsz_sf <- st_transform(mpsz_sf, 3414)
+```
+
+```{r}
+st_crs(mpsz_sf)
+```
+
+```{r}
+length(which(st_is_valid(mpsz_sf) == FALSE))
+```
+
+```{r}
+mpsz_sf <- st_make_valid(mpsz_sf)
+length(which(st_is_valid(mpsz_sf) == FALSE))
+```
+
+```{r}
+
+rs_sf <- read_rds("data/rds/rs_factors.rds")
+
+```
+
+```{r}
+
+storeys <- sort(unique(rs_sf$storey_range))
+
+```
+
+```{r}
+
+storey_order <- 1:length(storeys)
+storey_range_order <- data.frame(storeys, storey_order)
+
+```
+
+```{r}
+head(storey_range_order)
+
+```
+
+```{r}
+
+rs_sf <- left_join(rs_sf, storey_range_order, by=c("storey_range" = "storeys"))
+
+```
+
+```{r}
+
+glimpse(rs_sf)
+
+```
+
+```{r}
+write_rds(rs_sf,"data/rds/rs_sf.rds")
+```
+
+```{r}
+rs_sf <- read_rds("data/rds/rs_sf.rds")
+```
+
+```{r}
+
+train_data <- rs_sf %>% filter(month >= "2022-10" & month <= "2022-12")
+test_data <- rs_sf %>% filter(month >= "2023-01" & month <= "2023-02")
+```
+
+```{r}
+#| eval: false
+write_rds(train_data, "data/rds/train_data.rds")
+write_rds(test_data, "data/rds/test_data.rds")
+```
+
+```{r}
+train_data <- read_rds("data/rds/train_data.rds")
+test_data <- read_rds("data/rds/test_data.rds")
+
+```
+
+Build a non-spatial multiple linear regression
+
+```{r}
+price_mlr <- lm(resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_data)
+summary(price_mlr)
+```
+
+```{r}
+
+write_rds(price_mlr, "data/rds/price_mlr.rds" ) 
+
+```
+
+gwr prediction method
+
+```{r}
+train_data_sp <- as_Spatial(train_data)
+train_data_sp
+
+```
+
+```{r}
+#| eval: false
+bw_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=train_data_sp,
+                  approach="CV",
+                  kernel="gaussian",
+                  adaptive=TRUE,
+                  longlat=FALSE)
+```
+
+```{r}
+#| eval: false
+write_rds(bw_adaptive, "data/rds/bw_adaptive.rds")
+
+```
+
+```{r}
+bw_adaptive <- read_rds("data/rds/bw_adaptive.rds")
+bw_adaptive
+```
+
+```{r}
+#| eval: false
+gwr_adaptive <- gwr.basic(formula = resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=train_data_sp,
+                          bw=bw_adaptive, 
+                          kernel = 'gaussian', 
+                          adaptive=TRUE,
+                          longlat = FALSE)
+```
+
+```{r}
+#| eval: false
+write_rds(gwr_adaptive, "data/rds/gwr_adaptive.rds")
+
+```
+
+```{r}
+gwr_adaptive <- read_rds("data/rds/gwr_adaptive.rds")
+gwr_adaptive
+```
+
+Preparing coordinates data
+
+```{r}
+coords <- st_coordinates(rs_sf)
+coords_train <- st_coordinates(train_data)
+coords_test <- st_coordinates(test_data)
+```
+
+```{r}
+coords_train <- write_rds(coords_train, "data/rds/coords_train.rds" )
+coords_test <- write_rds(coords_test, "data/rds/coords_test.rds" )
+```
+
+Droping geometry field
+
+```{r}
+train_data <- train_data %>% 
+  st_drop_geometry()
+
+```
+
+Calibrating Random Forest Model
+
+```{r}
+set.seed(1234)
+rf <- ranger(formula = resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+             data=train_data)
+
+```
+
+```{r}
+print(rf)
+```
+
+Calibrating Geographical Random Forest Model
+
+(Calibrating using training data)
+
+```{r}
+#| eval: false
+bwRF_adaptive <- grf.bw(formula = resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH, train_data,
+                  kernel = "adaptive",
+                  coords=coords_train,
+                  step = 10,
+                  trees=30)
+
+```
+
+```{r}
+#| eval: false
+set.seed(1234)
+gwRF_adaptive <- grf(formula = resale_price ~ floor_area_sqm +
+                  storey_order + total_remaining_lease + PROX_GOOD_PRISCH +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_TRAIN + PROX_PARK + PROX_MALL + PROX_BUS + PROX_KINDERGARTEN +
+                  PROX_SUPERMARKET + PROX_STUDENT + PROX_DENGUE + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                     train_data, 
+                     ntree = 30,
+                     bw=296,
+                     kernel="adaptive",
+                     coords=coords_train)
+
+```
+
+```{r}
+#| eval: false
+write_rds(gwRF_adaptive, "data/rds/gwRF_adaptive.rds")
+
+```
+
+```{r}
+
+gwRF_adaptive <- read_rds("data/rds/gwRF_adaptive.rds")
+
+```
+
+Predicting by using test data
+
+(preparing the test data)
+
+```{r}
+test_data <- cbind(test_data, coords_test) %>%
+  st_drop_geometry()
+```
+
+```{r}
+any(is.na(test_data))
+test_data[rowSums(is.na(test_data))!=0,]
+
+```
+
+```{r}
+#| eval: false
+gwRF_pred <- predict.grf(gwRF_adaptive, 
+                           test_data, 
+                           x.var.name="X",
+                           y.var.name="Y", 
+                           local.w=1,
+                           global.w=0)
+
+```
+
+```{r}
+#| eval: false
+GRF_pred <- write_rds(gwRF_pred, "data/rds/GRF_pred.rds")
+```
+
+```{r}
+GRF_pred <- read_rds("data/rds/GRF_pred.rds")
+GRF_pred_df <- as.data.frame(GRF_pred)
+
+```
+
+```{r}
+
+test_data_p <- cbind(test_data, GRF_pred_df)
+```
+
+```{r}
+write_rds(test_data_p, "data/rds/test_data_p.rds")
+```
+
+```{r}
+rmse(test_data_p$resale_price, 
+     test_data_p$GRF_pred)
+```
+
+```{r}
+ggplot(data = test_data_p,
+       aes(x = GRF_pred,
+           y = resale_price)) +
+  geom_point()
+
+```
+A better predictive model should have the scatter point close to the diagonal line. The scatter plot can be also used to detect if any outliers in the model.
