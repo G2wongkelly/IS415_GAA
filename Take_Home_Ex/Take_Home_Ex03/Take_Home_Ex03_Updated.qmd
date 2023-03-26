@@ -99,13 +99,14 @@ As mentioned in the previous section of 4.1, we are only interested in (1) HDB 4
 ```{r}
 rs_subset <-  filter(resale,flat_type == "4 ROOM") %>% 
               filter(month >= "2021-01" & month <= "2023-03")
+rs_subset
 ```
 
 From the results above, we can tell that:
 
 -   We have successfully filtered our data based on earlier chosen HDB model flat and transaction period!
 
--   From January 2021 to March 2023, there are **\_\_\_\_\_\_\_\_\_\_**for 4-room flat in Singapore.
+-   From January 2021 to March 2023, there are **25,582** for 4-room flat in Singapore.
 
 ### 4.1.2 Transform Resale Data
 
@@ -334,17 +335,11 @@ From the results above, we can see that the datasets are all in different CRS:
 
 -   The datasets with WGS84 are:
 
-    -   hawker_sf, supermarket_sf, student_sf, dengue_sf, park_sf,train_sf
-
-    -   As the EPSG code are in 4326 which is the appropriate EPSG code for WGS84, we will only need to transform the CRS later on
+    -   hawker_sf, supermarket_sf, student_sf, dengue_sf,train_sf
 
 -   The datasets with SVY21 are:
 
-    -   elder_sf, train_sf, bus_sf, kindergarten_sf
-
-    -   For all of these datasets with SVY21 ???
-
--   The dataset read in csv????
+    -   elder_sf, bus_sf, kindergarten_sf,park_sf
 
 ## 5.2 Transform all Data to CRS EPSG 3414
 
