@@ -32,7 +32,7 @@ In addition, we will also include other locational factors such as proximity of 
 ***Data Summary Table***
 
 | Type                           | Name                                  | Format   | Source              |
-|------------------|-----------------|------------------|-------------------|
+|------------------|------------------|------------------|-------------------|
 | Aspatial                       | HDB resale flat prices                | .csv     | data.gov.sg         |
 | Geospatial                     | Master plan 2014 subzone web boundary | .shp     | data.gov.sg         |
 | Geospatial (Locational factor) | Elder care services                   | .shp     | data.gov.sg         |
@@ -57,36 +57,19 @@ pacman::p_load(olsrr, sf, spdep, sfdep, GWmodel, tmap, tidyverse, gtsummary, Spa
 The R packages installed that we will be using for take-home assignment 3 are:
 
 -   **olsrr**: designed for use with ordinary least squares (OLS) regression
-
-```{=html}
-<!-- -->
-```
 -   **sf:** used for importing, managing, and processing geospatial data
-
 -   **spdep:** provides function for spatial data analysis
-
 -   **sfdep:** An interface for 'spdep' to integrate with 'sf' objects and the 'tidyverse'
-
 -   **GWmodel**: used for modeling geostatistical data
-
 -   **tmap:** used for creating thematic maps, such as choropleth and bubble maps
-
 -   **tidyverse:** a collection of packages for data science and data analysis
-
 -   **gtsummary:** used for creating publication-ready summary tables of data
-
 -   **SpatialML:** Implements a spatial extension of the random forest algorithm
-
 -   **rsample**: working with data splits, resampling, and cross-validation
-
 -   **Metrics**: Evaluating the performance of predictive models
-
 -   **jsonlite**: Working with JSON data in R
-
 -   **httr:** Working with HTTP web APIs in R
-
 -   **rvest:** Web scraping and data extraction
-
 -   **sp:** Working with spatial data
 
 # 4. Data Wrangling: Geospatial Data & Aspatial Data
@@ -1080,9 +1063,7 @@ Before moving on, let us save the output into rds file for future use.
 GRF_pred <- write_rds(gwRF_pred, "data/rds/GRF_pred.rds")
 ```
 
-(Converting the predicting output into a data frame)
-
-The output of the predict.grf() is a vector of predicted values. It is wiser to convert it into a data frame for further visualisation and analysis
+Next, we will convert the predicting output into a data frame. The output of the predict.grf() is a vector of predicted values. It is wiser to convert it into a data frame for further visualisation and analysis
 
 ```{r}
 GRF_pred <- read_rds("data/rds/GRF_pred.rds")
@@ -1099,14 +1080,14 @@ test_data_p <- cbind(test_data, GRF_pred_df)
 write_rds(test_data_p, "data/rds/test_data_p.rds")
 ```
 
-(Calculating root mean square error)
+### 8.6.4 Calculating root mean square error
 
 ```{r}
 rmse(test_data_p$resale_price, 
      test_data_p$GRF_pred)
 ```
 
-(Visualising the predicted values)
+### 8.6.5 Visualising the predicted values
 
 ```{r}
 ggplot(data = test_data_p,
@@ -1115,4 +1096,18 @@ ggplot(data = test_data_p,
   geom_point()
 ```
 
-A better predictive model should have the scatter point close to the diagonal line. The scatter plot can be also used to detect if any outliers in the model.
+# 9. Analysis
+
+The scatterplot generated above reveals a robust association between the resale price of HDB and GRF prediction, indicating a superior predictive model because the proximity of all points are close to the diagonal line suggests a linear relationship.
+
+# **10. References** & Resources used
+
+Here are the list of resources used in take-home exercise 3, as well as their links. Special thanks to Seniors work samples and Prof Kam for all the detailed explanations and clear documentary posted!! :))
+
+<https://anyscript.org/ammr-doc/auto_examples/Mocap/plot_Plug-in-gait_Simple_FullBody_GRFPrediction.html>
+
+<https://data36.com/predictive-analytics-101-part-2/>
+
+<https://grf-labs.github.io/grf/REFERENCE.html>
+
+<https://rdrr.io/cran/SpatialML/man/predict.grf.html>
