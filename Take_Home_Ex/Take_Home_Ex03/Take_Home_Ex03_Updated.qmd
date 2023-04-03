@@ -32,7 +32,7 @@ In addition, we will also include other locational factors such as proximity of 
 ***Data Summary Table***
 
 | Type                           | Name                                  | Format   | Source              |
-|------------------|------------------|------------------|-------------------|
+|--------------------------------|---------------------------------------|----------|---------------------|
 | Aspatial                       | HDB resale flat prices                | .csv     | data.gov.sg         |
 | Geospatial                     | Master plan 2014 subzone web boundary | .shp     | data.gov.sg         |
 | Geospatial (Locational factor) | Elder care services                   | .shp     | data.gov.sg         |
